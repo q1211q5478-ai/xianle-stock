@@ -6,164 +6,317 @@
   <title>🍗 鮮樂炸雞 - 老闆視角</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --orange: #FF8C00;
+      --orange-dim: rgba(255,140,0,0.15);
+      --green: #00C853;
+      --green-dim: rgba(0,200,83,0.15);
+      --red: #FF1744;
+      --red-dim: rgba(255,23,68,0.15);
+      --yellow: #FF9100;
+      --yellow-dim: rgba(255,145,0,0.15);
+      --bg: #0D0D1A;
+      --card: #16162A;
+      --card-hover: #1E1E38;
+      --border: #2A2A45;
+      --text: #FFFFFF;
+      --text-sub: #6B6B8D;
+    }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #0f0f1a;
-      color: #fff;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
       padding: 16px;
+      padding-bottom: 30px;
     }
 
     /* Header */
     .header {
       text-align: center;
-      padding: 20px 0 16px;
+      padding: 10px 0 20px;
+    }
+    .header h1 {
+      font-size: 26px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #FF8C00, #FFAB40);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header p { font-size: 12px; color: var(--text-sub); margin-top: 4px; }
+
+    /* KPI Row */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
       margin-bottom: 16px;
     }
-    .header h1 { 
-      font-size: 28px; 
-      color: #FF8C00; 
-      text-shadow: 0 0 20px rgba(255,140,0,0.3);
+    .kpi-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 10px;
+      text-align: center;
     }
-    .header p { font-size: 13px; color: #666; margin-top: 6px; }
+    .kpi-card .icon { font-size: 20px; margin-bottom: 6px; }
+    .kpi-card .val {
+      font-size: 26px;
+      font-weight: 900;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .kpi-card .lbl { font-size: 10px; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; }
+    .kpi-card.red .val { color: var(--red); }
+    .kpi-card.orange .val { color: var(--yellow); }
+    .kpi-card.green .val { color: var(--green); }
 
     /* Store Selector */
     .stores {
       display: flex;
-      gap: 12px;
-      margin-bottom: 20px;
+      gap: 10px;
+      margin-bottom: 16px;
     }
     .store-btn {
       flex: 1;
-      padding: 18px;
-      background: linear-gradient(145deg, #1a1a2e, #16213e);
-      border: 2px solid #333;
-      border-radius: 16px;
-      color: #888;
-      font-size: 18px;
+      padding: 16px;
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      color: var(--text-sub);
+      font-size: 15px;
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.3s;
+      transition: all 0.25s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
     .store-btn.active {
-      border-color: #FF8C00;
-      background: linear-gradient(145deg, #FF8C00, #e07800);
-      color: #fff;
-      box-shadow: 0 4px 20px rgba(255,140,0,0.4);
-      transform: scale(1.02);
+      border-color: var(--orange);
+      background: var(--orange-dim);
+      color: var(--orange);
+      box-shadow: 0 0 20px rgba(255,140,0,0.2);
     }
+    .store-btn .badge {
+      background: var(--red);
+      color: #fff;
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 8px;
+      display: none;
+    }
+    .store-btn.active .badge { display: inline; }
 
     /* Date Nav */
     .date-nav {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 24px;
-      background: #1a1a2e;
+      margin-bottom: 20px;
+      background: var(--card);
       padding: 12px 16px;
-      border-radius: 12px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
     }
     .date-nav button {
-      padding: 10px 18px;
-      background: #333;
+      padding: 8px 16px;
+      background: var(--border);
       border: none;
       border-radius: 8px;
-      color: #fff;
+      color: var(--text);
       font-size: 16px;
       cursor: pointer;
+      transition: background 0.2s;
     }
+    .date-nav button:active { background: var(--orange); }
     .date-nav span {
       flex: 1;
       text-align: center;
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--orange);
+    }
+
+    /* Alert Section */
+    .alert-section {
+      background: var(--red-dim);
+      border: 1.5px solid rgba(255,23,68,0.3);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .alert-section.show { display: block; }
+    .alert-section .head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--red);
+      margin-bottom: 10px;
+    }
+    .alert-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,23,68,0.1);
+      font-size: 13px;
+    }
+    .alert-item:last-child { border-bottom: none; }
+    .alert-item .name { font-weight: 600; color: var(--text); }
+    .alert-item .vi { font-size: 11px; color: var(--text-sub); }
+    .alert-item .stock {
+      font-weight: 900;
       font-size: 18px;
+      color: var(--red);
+    }
+    .alert-item .stock small {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-sub);
+    }
+    .alert-empty {
+      text-align: center;
+      color: var(--green);
+      font-size: 14px;
       font-weight: 700;
-      color: #FF8C00;
+      padding: 10px 0;
     }
 
     /* Section Title */
-    .section-title {
+    .section-head {
       display: flex;
       align-items: center;
       gap: 10px;
-      font-size: 20px;
-      font-weight: 700;
-      color: #fff;
-      margin: 24px 0 14px;
-      padding: 12px 16px;
-      background: linear-gradient(90deg, #FF8C00 0%, transparent 100%);
-      border-radius: 10px;
-      border-left: 4px solid #fff;
+      margin-bottom: 12px;
     }
-    .section-title.daily { background: linear-gradient(90deg, #FF8C00 0%, transparent 100%); }
-    .section-title.weekly { background: linear-gradient(90deg, #4CAF50 0%, transparent 100%); }
+    .section-title {
+      font-size: 16px;
+      font-weight: 800;
+      padding: 8px 14px;
+      border-radius: 10px;
+    }
+    .section-title.daily {
+      background: var(--orange-dim);
+      color: var(--orange);
+    }
+    .section-title.weekly {
+      background: var(--green-dim);
+      color: var(--green);
+    }
+    .section-title .count {
+      font-size: 12px;
+      opacity: 0.7;
+      margin-left: 4px;
+      font-weight: 600;
+    }
 
     /* Item Grid */
     .item-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-bottom: 8px;
+      gap: 10px;
+      margin-bottom: 24px;
     }
     .item-card {
-      background: linear-gradient(145deg, #1a1a2e, #16213e);
+      background: var(--card);
       border-radius: 16px;
-      padding: 20px 16px;
-      text-align: center;
-      border: 1px solid #333;
+      padding: 16px 14px;
+      border: 1.5px solid var(--border);
       transition: all 0.2s;
     }
-    .item-card.has-stock {
-      border-color: #333;
+    .item-card.status-ok { border-color: rgba(0,200,83,0.25); }
+    .item-card.status-low { border-color: rgba(255,145,0,0.35); background: rgba(255,145,0,0.05); }
+    .item-card.status-critical { border-color: rgba(255,23,68,0.35); background: rgba(255,23,68,0.05); }
+    .item-card .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 8px;
     }
-    .item-card .cn { 
-      font-size: 22px; 
-      font-weight: 800; 
-      color: #fff;
-      margin-bottom: 6px;
+    .item-card .cn {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text);
     }
-    .item-card .vi { 
-      font-size: 13px; 
-      color: #666;
-      margin-bottom: 10px;
+    .item-card .vi { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+    .item-card .badge {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 8px;
+      font-weight: 700;
+      flex-shrink: 0;
     }
-    .item-card .stock {
-      font-size: 36px;
-      font-weight: 900;
-      color: #FF8C00;
-      text-shadow: 0 0 15px rgba(255,140,0,0.4);
-    }
-    .item-card .stock.low { color: #ff4444; text-shadow: 0 0 15px rgba(255,68,68,0.4); }
-    .item-card .stock.ok { color: #4CAF50; text-shadow: 0 0 15px rgba(76,175,80,0.4); }
-    .item-card .unit { 
-      font-size: 14px; 
-      color: #888;
+    .status-ok .badge { background: var(--green-dim); color: var(--green); }
+    .status-low .badge { background: var(--yellow-dim); color: var(--yellow); }
+    .status-critical .badge { background: var(--red-dim); color: var(--red); }
+    .status-empty .badge { background: var(--border); color: var(--text-sub); }
+    .status-empty .badge::before { content: '○ '; }
+
+    .item-card .stock-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
       margin-top: 4px;
     }
-    .item-card .no-data {
-      font-size: 14px;
-      color: #444;
-      font-style: italic;
+    .item-card .stock-num {
+      font-size: 32px;
+      font-weight: 950;
+      line-height: 1;
     }
+    .status-ok .stock-num { color: var(--green); }
+    .status-low .stock-num { color: var(--yellow); }
+    .status-critical .stock-num { color: var(--red); }
+    .status-empty .stock-num { color: var(--text-sub); font-size: 18px; font-weight: 700; }
+    .item-card .unit { font-size: 13px; color: var(--text-sub); }
+    .item-card .low-info {
+      font-size: 10px;
+      color: var(--text-sub);
+      margin-top: 4px;
+    }
+    .item-card .low-info span { color: var(--red); font-weight: 700; }
 
     /* Loading */
     .loading {
       text-align: center;
-      padding: 40px;
-      color: #666;
+      padding: 60px 0;
       font-size: 16px;
+      color: var(--text-sub);
+    }
+    .loading::after {
+      content: '';
+      display: inline-block;
+      width: 20px; height: 20px;
+      border: 3px solid var(--border);
+      border-top-color: var(--orange);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* No data */
+    .no-data {
+      text-align: center;
+      padding: 30px 0;
+      color: var(--text-sub);
+      font-size: 14px;
     }
 
     /* Debug */
-    .debug {
-      background: #0a0a15;
-      border: 1px solid #333;
+    #debug {
+      font-size: 10px;
+      color: var(--text-sub);
+      margin-top: 20px;
+      padding: 8px;
+      background: var(--card);
       border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 20px;
-      font-family: monospace;
-      font-size: 11px;
-      white-space: pre-wrap;
-      word-break: break-all;
       display: none;
     }
   </style>
@@ -172,26 +325,59 @@
 
 <div class="header">
   <h1>🍗 鮮樂炸雞</h1>
-  <p>老闆視角</p>
+  <p>老闆視角 · 庫存儀表板</p>
 </div>
 
+<!-- KPI Row -->
+<div class="kpi-row">
+  <div class="kpi-card red" id="kpi-total-stock">
+    <div class="icon">📦</div>
+    <div class="val">—</div>
+    <div class="lbl">總品項</div>
+  </div>
+  <div class="kpi-card orange" id="kpi-filled">
+    <div class="icon">✅</div>
+    <div class="val">—</div>
+    <div class="lbl">已填報</div>
+  </div>
+  <div class="kpi-card red" id="kpi-alert">
+    <div class="icon">🚨</div>
+    <div class="val">0</div>
+    <div class="lbl">需補貨</div>
+  </div>
+</div>
+
+<!-- Store Selector -->
 <div class="stores">
-  <button class="store-btn active" onclick="selectStore('總店')">🏠 總店</button>
-  <button class="store-btn" onclick="selectStore('麥金店')">🏪 麥金店</button>
+  <button class="store-btn active" id="btn-total" onclick="selectStore('總店')">
+    🏠 總店 <span class="badge" id="badge-total">0</span>
+  </button>
+  <button class="store-btn" id="btn-mj" onclick="selectStore('麥金店')">
+    🏪 麥金店 <span class="badge" id="badge-mj">0</span>
+  </button>
 </div>
 
+<!-- Date Nav -->
 <div class="date-nav">
   <button onclick="changeDate(-1)">◀</button>
-  <span id="date-label">2026-04-05</span>
+  <span id="date-label">—</span>
   <button onclick="changeDate(1)">▶</button>
 </div>
 
-<div class="debug" id="debug"></div>
+<!-- Alert Section -->
+<div class="alert-section" id="alert-section">
+  <div class="head">🚨 庫存警示</div>
+  <div id="alert-list"></div>
+</div>
 
+<!-- Content -->
 <div id="content">
   <div class="loading">載入中...</div>
 </div>
 
+<div id="debug"></div>
+
+<!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -208,66 +394,75 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
+  // ===== ITEMS（同步最新庫存表） =====
   const ITEMS = {
     daily: [
-      { id: 'D001', cn: '雞排', vi: 'Gà rán miếng (Lườn gà)', unit: '盒', low: 2, order: 6 },
-      { id: 'D002', cn: '雞腿', vi: 'Đùi gà', unit: '盒', low: 1, order: 4 },
-      { id: 'D003', cn: '雞翅', vi: 'Cánh gà', unit: '盒', low: 1, order: 4 },
-      { id: 'D004', cn: '鹹酥雞', vi: 'Gà popcorn (Gà không xương)', unit: '包', low: 5, order: 15 },
-      { id: 'D005', cn: '雞軟骨', vi: 'Sụn gà', unit: '包', low: 3, order: 10 },
-      { id: 'D006', cn: '甜不辣', vi: 'Chả cá sợi (Tianbu-la)', unit: '包', low: 3, order: 10 },
-      { id: 'D007', cn: '薯條', vi: 'Khoai tây nhỏ', unit: '包', low: 3, order: 10 },
-      { id: 'D008', cn: '脆薯', vi: 'Khoai tây to', unit: '包', low: 2, order: 6 },
-      { id: 'D009', cn: '青椒', vi: 'Ớt chuông xanh', unit: '包', low: 5, order: 15 },
-      { id: 'D010', cn: '玉米', vi: 'Ngô (Bắp)', unit: '包', low: 5, order: 15 },
-      { id: 'D011', cn: '四季豆', vi: 'Đậu cove màu xanh', unit: '包', low: 5, order: 15 },
-      { id: 'D012', cn: '杏鮑菇', vi: 'Nấm trắng', unit: '包', low: 5, order: 15 },
-      { id: 'D013', cn: '香菇', vi: 'Nấm nâu', unit: '包', low: 5, order: 15 },
-      { id: 'D014', cn: '豬血糕', vi: 'Tiết heo nếp / Miếng', unit: '包', low: 15, order: 40 },
-      { id: 'D015', cn: '雞蛋豆腐', vi: 'Đậu phụ trứng / Hộp', unit: '盒', low: 5, order: 15 },
-      { id: 'D016', cn: '雞脖子', vi: 'Cổ gà', unit: '包', low: 3, order: 10 },
-      { id: 'D017', cn: '耐炸油', vi: 'Dầu Rán', unit: '桶', low: 2, order: 5 },
-      { id: 'D018', cn: '脆皮粉', vi: 'Bột Ướt', unit: '包', low: 1, order: 4 },
-      { id: 'D019', cn: '白色雞排粉', vi: 'Bột Khô', unit: '包', low: 1, order: 4 },
+      { id: 'D001', cn: '雞排', vi: 'Gà rán miếng', unit: '盒', low: 2 },
+      { id: 'D002', cn: '雞腿', vi: 'Đùi gà', unit: '盒', low: 1 },
+      { id: 'D003', cn: '雞翅', vi: 'Cánh gà', unit: '盒', low: 1 },
+      { id: 'D004', cn: '鹹酥雞', vi: 'Gà popcorn', unit: '包', low: 5 },
+      { id: 'D005', cn: '雞軟骨', vi: 'Sụn gà', unit: '包', low: 3 },
+      { id: 'D006', cn: '甜不辣', vi: 'Chả cá sợi', unit: '包', low: 3 },
+      { id: 'D007', cn: '薯條', vi: 'Khoai tây nhỏ', unit: '包', low: 3 },
+      { id: 'D008', cn: '脆薯', vi: 'Khoai tây to', unit: '包', low: 2 },
+      { id: 'D009', cn: '青椒', vi: 'Ớt chuông xanh', unit: '包', low: 5 },
+      { id: 'D010', cn: '玉米', vi: 'Ngô (Bắp)', unit: '包', low: 5 },
+      { id: 'D011', cn: '四季豆', vi: 'Đậu cove', unit: '包', low: 5 },
+      { id: 'D012', cn: '杏鮑菇', vi: 'Nấm trắng', unit: '包', low: 5 },
+      { id: 'D013', cn: '香菇', vi: 'Nấm nâu', unit: '包', low: 5 },
+      { id: 'D014', cn: '豬血糕', vi: 'Tiết heo nếp', unit: '包', low: 15 },
+      { id: 'D015', cn: '雞蛋豆腐', vi: 'Đậu phụ trứng', unit: '盒', low: 5 },
+      { id: 'D016', cn: '雞脖子', vi: 'Cổ gà', unit: '包', low: 3 },
+      { id: 'D017', cn: '耐炸油', vi: 'Dầu Rán', unit: '桶', low: 2 },
+      { id: 'D018', cn: '脆皮粉', vi: 'Bột Ướt', unit: '包', low: 1 },
+      { id: 'D019', cn: '白色雞排粉', vi: 'Bột Khô', unit: '包', low: 1 },
     ],
     weekly: [
-      { id: 'W001', cn: '小卷天婦羅', vi: 'Tempura mực ống', unit: '包', low: 1, order: 5 },
-      { id: 'W002', cn: '包蛋天婦羅', vi: 'Tempura bọc trứng', unit: '包', low: 1, order: 5 },
-      { id: 'W003', cn: '地瓜', vi: 'Khoai lang / g', unit: '包', low: 1, order: 5 },
-      { id: 'W004', cn: '花枝丸', vi: 'Viên mực màu trắng to', unit: '包', low: 1, order: 5 },
-      { id: 'W005', cn: '虱脆丸', vi: 'Viên màu trắng nhỏ', unit: '包', low: 3, order: 10 },
-      { id: 'W006', cn: '豆干', vi: 'Đậu phụ vàng', unit: '包', low: 2, order: 8 },
-      { id: 'W007', cn: '百頁豆腐', vi: 'Đậu phụ màu trắng trong bao', unit: '包', low: 15, order: 40 },
-      { id: 'W008', cn: '起司條', vi: 'Phô mai que', unit: '包', low: 2, order: 8 },
-      { id: 'W009', cn: '魷米花', vi: 'Mực popcorn', unit: '包', low: 2, order: 8 },
-      { id: 'W010', cn: '牛蒡甜不辣', vi: 'Chả cá xâm', unit: '包', low: 2, order: 8 },
-      { id: 'W011', cn: '雞心', vi: 'Tim gà / Xiên', unit: '串', low: 20, order: 60 },
-      { id: 'W012', cn: '雞胗', vi: 'Mề gà / Xiên', unit: '串', low: 20, order: 60 },
-      { id: 'W013', cn: '皮蛋', vi: 'Trứng bắc thảo / Quả', unit: '顆', low: 6, order: 20 },
-      { id: 'W014', cn: '糯米腸', vi: 'Dồi nếp / Gói', unit: '包', low: 5, order: 15 },
-      { id: 'W015', cn: '銀絲卷', vi: 'Banh Bao', unit: '包', low: 3, order: 10 },
-      { id: 'W016', cn: '山藥捲', vi: 'Bánh khoai môn màu tím', unit: '捲', low: 1, order: 5 },
-      { id: 'W017', cn: '玲玲捲', vi: 'Váng đậu cuộn (Ling Ling Roll)', unit: '捲', low: 20, order: 60 },
-      { id: 'W018', cn: '鹹蛋黃芋泥球', vi: 'Viên khoai môn trứng muối', unit: '包', low: 1, order: 5 },
-      { id: 'W019', cn: '洋蔥圈', vi: 'Vòng hành tây chiên', unit: '包', low: 4, order: 12 },
-      { id: 'W020', cn: '可樂', vi: 'Cola', unit: '罐', low: 24, order: 48 },
-      { id: 'W021', cn: '雪碧', vi: 'Sprite', unit: '罐', low: 24, order: 48 },
-      { id: 'W022', cn: '竹籤', vi: 'Xiên', unit: '包', low: 2, order: 6 },
-      { id: 'W023', cn: '八兩紙袋', vi: 'Túi Giấy to', unit: '包', low: 10, order: 30 },
-      { id: 'W024', cn: '六兩紙袋', vi: 'Túi Giấy Vừa', unit: '包', low: 10, order: 30 },
-      { id: 'W025', cn: '四兩紙袋', vi: 'Túi Giấy Nhỏ', unit: '包', low: 10, order: 30 },
-      { id: 'W026', cn: '飲料袋', vi: 'Túi Chỉ Đựng Ức Gà', unit: '包', low: 5, order: 15 },
-      { id: 'W027', cn: '半斤提袋', vi: 'Túi Màu Vàng', unit: '包', low: 5, order: 15 },
-      { id: 'W028', cn: '四兩提袋', vi: 'Túi Màu Cam', unit: '包', low: 8, order: 24 },
+      { id: 'W001', cn: '小卷天婦羅', vi: 'Tempura mực ống', unit: '包', low: 1 },
+      { id: 'W002', cn: '包蛋天婦羅', vi: 'Tempura bọc trứng', unit: '包', low: 1 },
+      { id: 'W003', cn: '地瓜', vi: 'Khoai lang', unit: '包', low: 1 },
+      { id: 'W004', cn: '花枝丸', vi: 'Viên mực trắng', unit: '包', low: 1 },
+      { id: 'W005', cn: '虱脆丸', vi: 'Viên trắng nhỏ', unit: '包', low: 3 },
+      { id: 'W006', cn: '豆干', vi: 'Đậu phụ vàng', unit: '包', low: 2 },
+      { id: 'W007', cn: '百頁豆腐', vi: 'Đậu phụ trắng', unit: '包', low: 15 },
+      { id: 'W008', cn: '起司條', vi: 'Phô mai que', unit: '包', low: 2 },
+      { id: 'W009', cn: '魷米花', vi: 'Mực popcorn', unit: '包', low: 2 },
+      { id: 'W010', cn: '牛蒡甜不辣', vi: 'Chả cá xâm', unit: '包', low: 2 },
+      { id: 'W011', cn: '雞心', vi: 'Tim gà', unit: '串', low: 20 },
+      { id: 'W012', cn: '雞胗', vi: 'Mề gà', unit: '串', low: 20 },
+      { id: 'W013', cn: '皮蛋', vi: 'Trứng bắc thảo', unit: '顆', low: 6 },
+      { id: 'W014', cn: '糯米腸', vi: 'Dồi nếp', unit: '包', low: 5 },
+      { id: 'W015', cn: '銀絲卷', vi: 'Banh Bao', unit: '包', low: 3 },
+      { id: 'W016', cn: '山藥捲', vi: 'Bánh khoai môn', unit: '捲', low: 1 },
+      { id: 'W017', cn: '玲玲捲', vi: 'Ling Ling Roll', unit: '捲', low: 20 },
+      { id: 'W018', cn: '鹹蛋黃芋泥球', vi: 'Khoai môn trứng', unit: '包', low: 1 },
+      { id: 'W019', cn: '洋蔥圈', vi: 'Vòng hành tây', unit: '包', low: 4 },
+      { id: 'W020', cn: '可樂', vi: 'Cola', unit: '罐', low: 24 },
+      { id: 'W021', cn: '雪碧', vi: 'Sprite', unit: '罐', low: 24 },
+      { id: 'W022', cn: '竹籤', vi: 'Xiên', unit: '包', low: 2 },
+      { id: 'W023', cn: '八兩紙袋', vi: 'Túi Giấy to', unit: '包', low: 10 },
+      { id: 'W024', cn: '六兩紙袋', vi: 'Túi Giấy Vừa', unit: '包', low: 10 },
+      { id: 'W025', cn: '四兩紙袋', vi: 'Túi Giấy Nhỏ', unit: '包', low: 10 },
+      { id: 'W026', cn: '飲料袋', vi: 'Túi Ức Gà', unit: '包', low: 5 },
+      { id: 'W027', cn: '半斤提袋', vi: 'Túi Vàng', unit: '包', low: 5 },
+      { id: 'W028', cn: '四兩提袋', vi: 'Túi Cam', unit: '包', low: 8 },
     ]
   };
 
   let currentStore = '總店';
   let currentDate = new Date().toISOString().split('T')[0];
 
+  // Set date label
+  function fmtDate(d) {
+    const [y, m, day] = d.split('-');
+    return `${m}/${day}`;
+  }
+  document.getElementById('date-label').textContent = fmtDate(currentDate);
+
   window.selectStore = function(store) {
     currentStore = store;
-    document.querySelectorAll('.store-btn').forEach(b => b.classList.toggle('active', b.textContent.includes(store)));
+    document.getElementById('btn-total').classList.toggle('active', store === '總店');
+    document.getElementById('btn-mj').classList.toggle('active', store === '麥金店');
     loadData();
   };
 
@@ -275,96 +470,146 @@
     const d = new Date(currentDate);
     d.setDate(d.getDate() + delta);
     currentDate = d.toISOString().split('T')[0];
-    document.getElementById('date-label').textContent = currentDate;
+    document.getElementById('date-label').textContent = fmtDate(currentDate);
     loadData();
   };
+
+  function getStatus(item, stock) {
+    if (stock === undefined || stock === null) return 'empty';
+    if (stock === 0) return 'critical';
+    if (stock <= item.low * 0.5) return 'critical';
+    if (stock <= item.low) return 'low';
+    return 'ok';
+  }
+
+  function getBadgeText(status) {
+    if (status === 'ok') return '✓ 充足';
+    if (status === 'low') return '⚠ 偏低';
+    if (status === 'critical') return '✕ 急補';
+    return '○ 未填';
+  }
 
   async function loadData() {
     const docId = `${currentStore}_${currentDate}`;
     const docRef = doc(db, 'stock', docId);
-    const debugEl = document.getElementById('debug');
     const contentEl = document.getElementById('content');
+    const debugEl = document.getElementById('debug');
 
     contentEl.innerHTML = '<div class="loading">載入中...</div>';
 
     try {
       const snapshot = await getDoc(docRef);
-      
       const data = snapshot.data() || {};
       const items = {};
-      
-      // 解析 items
-      // 方法1：檢查 Firebase SDK 解析後的 items 物件
+
+      // 相容兩種 Firestore 格式
       if (data.items && typeof data.items === 'object') {
-        for (const [key, value] of Object.entries(data.items)) {
-          if (typeof value === 'number') {
-            items[key] = value;
-          } else if (value && (value.integerValue !== undefined || value.doubleValue !== undefined)) {
-            items[key] = value.integerValue !== undefined ? parseInt(value.integerValue, 10) : parseFloat(value.doubleValue, 10);
+        for (const [k, v] of Object.entries(data.items)) {
+          items[k] = typeof v === 'number' ? v
+            : (v?.integerValue !== undefined ? parseInt(v.integerValue) : v?.doubleValue);
+        }
+      }
+      for (const [k, v] of Object.entries(data)) {
+        if (k.startsWith('items.')) {
+          const id = k.replace('items.', '');
+          if (!items[id]) {
+            items[id] = typeof v === 'number' ? v
+              : (v?.integerValue !== undefined ? parseInt(v.integerValue) : v?.doubleValue);
           }
         }
       }
-      
-      // 方法2：檢查扁平的欄位（items.D001, items.D002...）
-      for (const [key, value] of Object.entries(data)) {
-        if (key.startsWith('items.')) {
-          const itemId = key.replace('items.', '');
-          if (!items[itemId]) { // 還沒解析過
-            if (typeof value === 'number') {
-              items[itemId] = value;
-            } else if (value && (value.integerValue !== undefined || value.doubleValue !== undefined)) {
-              items[itemId] = value.integerValue !== undefined ? parseInt(value.integerValue, 10) : parseFloat(value.doubleValue, 10);
-            }
-          }
-        }
+
+      // debugEl.textContent = `解析 items: ${JSON.stringify(items)}`;
+
+      // KPI
+      const allItems = [...ITEMS.daily, ...ITEMS.weekly];
+      const filled = allItems.filter(i => items[i.id] !== undefined).length;
+      const alertItems = allItems.filter(i => {
+        const s = items[i.id];
+        return s !== undefined && s <= i.low;
+      });
+      document.getElementById('kpi-filled').querySelector('.val').textContent = filled;
+      document.getElementById('kpi-total-stock').querySelector('.val').textContent = allItems.length;
+      const alertKpi = document.getElementById('kpi-alert');
+      alertKpi.querySelector('.val').textContent = alertItems.length;
+      alertKpi.className = 'kpi-card' + (alertItems.length > 0 ? ' red' : ' green');
+
+      // Badge on store buttons
+      document.getElementById('badge-total').textContent = currentStore === '總店' ? alertItems.length : '';
+      document.getElementById('badge-mj').textContent = currentStore === '麥金店' ? alertItems.length : '';
+
+      // Alert section
+      const alertSection = document.getElementById('alert-section');
+      const alertList = document.getElementById('alert-list');
+      if (alertItems.length > 0) {
+        alertSection.classList.add('show');
+        alertList.innerHTML = alertItems.slice(0, 5).map(item => {
+          const s = items[item.id];
+          return `<div class="alert-item">
+            <div><div class="name">${item.cn}</div><div class="vi">${item.vi} · 警戒${item.low}${item.unit}</div></div>
+            <div class="stock">${s} <small>${item.unit}</small></div>
+          </div>`;
+        }).join('');
+      } else {
+        alertSection.classList.add('show');
+        alertList.innerHTML = '<div class="alert-empty">✅ 所有品項庫存充足</div>';
       }
-      
-      debugEl.textContent = `解析 items: ${JSON.stringify(items)}`;
+
       renderContent(items);
     } catch (e) {
       debugEl.textContent = '錯誤: ' + e.message;
-      contentEl.innerHTML = '<div class="loading">載入失敗: ' + e.message + '</div>';
+      contentEl.innerHTML = '<div class="no-data">❌ 載入失敗：' + e.message + '</div>';
     }
+  }
+
+  function buildItemCard(item, stock) {
+    const status = getStatus(item, stock);
+    const badge = getBadgeText(status);
+    return `
+      <div class="item-card status-${status}">
+        <div class="card-top">
+          <div>
+            <div class="cn">${item.cn}</div>
+            <div class="vi">${item.vi}</div>
+          </div>
+          <div class="badge">${badge}</div>
+        </div>
+        <div class="stock-row">
+          ${stock !== undefined
+            ? `<div class="stock-num">${stock}</div><div class="unit">${item.unit}</div>`
+            : `<div class="stock-num">—</div>`
+          }
+        </div>
+        ${stock !== undefined
+          ? `<div class="low-info">低庫存警示：<span>${item.low}${item.unit}</span></div>`
+          : ''
+        }
+      </div>
+    `;
   }
 
   function renderContent(items) {
     const contentEl = document.getElementById('content');
-    
-    let html = `
-      <div class="section-title daily">📅 每日品項</div>
-      <div class="item-grid">
-        ${ITEMS.daily.map(item => buildItemCard(item, items)).join('')}
-      </div>
-      
-      <div class="section-title weekly">📦 每週品項</div>
-      <div class="item-grid">
-        ${ITEMS.weekly.map(item => buildItemCard(item, items)).join('')}
-      </div>
-    `;
-    
-    contentEl.innerHTML = html;
-  }
+    const dailyItems = ITEMS.daily.filter(i => items[i.id] !== undefined).length;
+    const weeklyItems = ITEMS.weekly.filter(i => items[i.id] !== undefined).length;
 
-  function buildItemCard(item, items) {
-    const val = items[item.id];
-    const hasStock = val !== undefined;
-    const isLow = hasStock && val < item.low;
-    const stockClass = hasStock ? (isLow ? 'low' : 'ok') : '';
-    
-    return `
-      <div class="item-card ${hasStock ? 'has-stock' : ''}">
-        <div class="cn">${item.cn}</div>
-        <div class="vi">${item.vi}</div>
-        ${hasStock 
-          ? `<div class="stock ${stockClass}">${val}</div><div class="unit">${item.unit}</div>`
-          : `<div class="no-data">尚無資料</div>`
-        }
+    contentEl.innerHTML = `
+      <div class="section-head">
+        <div class="section-title daily">📅 每日品項 <span class="count">${dailyItems}/${ITEMS.daily.length}</span></div>
+      </div>
+      <div class="item-grid">
+        ${ITEMS.daily.map(item => buildItemCard(item, items[item.id])).join('')}
+      </div>
+
+      <div class="section-head">
+        <div class="section-title weekly">📦 每週品項 <span class="count">${weeklyItems}/${ITEMS.weekly.length}</span></div>
+      </div>
+      <div class="item-grid">
+        ${ITEMS.weekly.map(item => buildItemCard(item, items[item.id])).join('')}
       </div>
     `;
   }
 
-  // Init
-  document.getElementById('date-label').textContent = currentDate;
   loadData();
 </script>
 </body>

@@ -8,68 +8,195 @@
   <title>🍗 鮮樂炸雞 - 庫存填報</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --orange: #FF8C00;
+      --orange-light: #FFF4E6;
+      --green: #2E7D32;
+      --green-light: #E8F5E9;
+      --red: #D32F2F;
+      --red-light: #FFEBEE;
+      --yellow: #F57C00;
+      --yellow-light: #FFF3E0;
+      --bg: #F5F6FA;
+      --card: #FFFFFF;
+      --text: #1A1A2E;
+      --text-sub: #8E8E9A;
+      --border: #EDEDF0;
+    }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #FAFAFA;
+      background: var(--bg);
       min-height: 100vh;
-      padding-bottom: 80px;
+      padding-bottom: 90px;
+      color: var(--text);
     }
 
     /* Header */
     .header {
-      background: #FF8C00;
+      background: linear-gradient(135deg, #FF8C00 0%, #FF6B00 100%);
       color: white;
-      padding: 20px 16px 16px;
-      text-align: center;
+      padding: 24px 20px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 20px rgba(255,140,0,0.3);
     }
-    .header h1 { font-size: 20px; font-weight: 600; }
-    .header p { font-size: 12px; opacity: 0.9; margin-top: 4px; }
-
-    /* Connection Status */
-    .conn-status {
-      font-size: 11px;
-      padding: 6px 12px;
-      border-radius: 20px;
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header h1 { font-size: 20px; font-weight: 800; letter-spacing: 0.5px; }
+    .conn-dot {
+      width: 10px; height: 10px;
+      background: #4CAF50;
+      border-radius: 50%;
       display: inline-block;
-      margin-top: 8px;
+      margin-right: 6px;
+      animation: pulse 2s infinite;
     }
-    .conn-status.connected { background: rgba(255,255,255,0.2); }
-    .conn-status.error { background: #ff4444; }
+    .conn-dot.offline { background: #ff4444; animation: none; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .conn-label { font-size: 12px; opacity: 0.9; }
+    .conn-label span { opacity: 0.7; font-size: 11px; }
+
+    /* KPI Summary Bar */
+    .kpi-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .kpi-card {
+      background: rgba(255,255,255,0.18);
+      border-radius: 12px;
+      padding: 10px 8px;
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+    .kpi-card .num {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1;
+    }
+    .kpi-card .lbl {
+      font-size: 10px;
+      opacity: 0.8;
+      margin-top: 3px;
+      color: #fff;
+    }
+    .kpi-card.alert .num { color: #FF6B6B; }
+    .kpi-card.fill .num { color: #7DFFB3; }
+
+    /* Progress Bar */
+    .progress-wrap {
+      margin-top: 12px;
+    }
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: rgba(255,255,255,0.85);
+      margin-bottom: 5px;
+    }
+    .progress-track {
+      height: 6px;
+      background: rgba(255,255,255,0.25);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #7DFFB3, #00E676);
+      border-radius: 3px;
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 0%;
+    }
 
     /* Store Selector */
     .store-selector {
       display: flex;
-      gap: 12px;
-      padding: 16px;
-      background: white;
-      margin: 12px;
-      border-radius: 16px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      gap: 10px;
+      padding: 14px 16px 0;
     }
     .store-btn {
       flex: 1;
-      padding: 14px;
-      border: 2px solid #E0E0E0;
-      border-radius: 12px;
-      background: white;
-      font-size: 15px;
-      font-weight: 600;
+      padding: 13px;
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      background: var(--card);
+      font-size: 14px;
+      font-weight: 700;
       cursor: pointer;
       transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      color: var(--text-sub);
     }
     .store-btn.active {
-      border-color: #FF8C00;
-      background: #FFF4E6;
-      color: #FF8C00;
+      border-color: var(--orange);
+      background: var(--orange-light);
+      color: var(--orange);
+      box-shadow: 0 2px 12px rgba(255,140,0,0.2);
     }
 
-    /* Section Title */
-    .section-title {
-      padding: 12px 16px 8px;
+    /* Alert Banner */
+    .alert-banner {
+      margin: 12px 16px 0;
+      background: var(--red-light);
+      border: 1.5px solid #FFCDD2;
+      border-radius: 12px;
+      padding: 10px 14px;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--red);
+      font-weight: 600;
+    }
+    .alert-banner.show { display: flex; }
+    .alert-banner .icon { font-size: 18px; }
+    .alert-banner .items { flex: 1; }
+    .alert-banner .count-badge {
+      background: var(--red);
+      color: #fff;
       font-size: 12px;
-      color: #999;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 700;
+    }
+
+    /* Section */
+    .section {
+      padding: 16px 16px 4px;
+    }
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-sub);
       text-transform: uppercase;
       letter-spacing: 1px;
+    }
+    .section-title.daily { color: var(--orange); }
+    .section-title.weekly { color: #2E7D32; }
+    .section-count {
+      font-size: 12px;
+      color: var(--text-sub);
+      background: var(--bg);
+      padding: 2px 10px;
+      border-radius: 10px;
     }
 
     /* Item Grid */
@@ -77,42 +204,87 @@
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
-      padding: 0 12px;
     }
     .item-card {
-      background: white;
-      border-radius: 14px;
-      padding: 16px 8px;
+      background: var(--card);
+      border-radius: 16px;
+      padding: 14px 8px 12px;
       text-align: center;
       cursor: pointer;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
       transition: transform 0.15s, box-shadow 0.15s;
+      border: 2px solid transparent;
+      position: relative;
+      overflow: hidden;
     }
     .item-card:active {
-      transform: scale(0.96);
-      background: #FFF4E6;
+      transform: scale(0.95);
     }
-    .item-card .name { font-size: 14px; font-weight: 600; color: #333; }
-    .item-card .sub { font-size: 11px; color: #999; margin-top: 2px; }
-    .item-card .current {
-      font-size: 11px;
-      color: #FF8C00;
-      margin-top: 4px;
-      font-weight: 600;
+    .item-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      border-radius: 16px 16px 0 0;
     }
+    .item-card.status-ok::before { background: var(--green); }
+    .item-card.status-low::before { background: var(--yellow); }
+    .item-card.status-critical::before { background: var(--red); }
+    .item-card.status-empty::before { background: var(--border); }
+    .item-card.status-ok { border-color: #C8E6C9; }
+    .item-card.status-low { border-color: #FFE0B2; background: #FFFBF5; }
+    .item-card.status-critical { border-color: #FFCDD2; background: #FFF9F9; }
+
+    .item-card .name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+    .item-card .sub {
+      font-size: 10px;
+      color: var(--text-sub);
+      margin-bottom: 6px;
+      line-height: 1.2;
+    }
+    .item-card .stock-display {
+      font-size: 20px;
+      font-weight: 900;
+      line-height: 1;
+      margin-bottom: 2px;
+    }
+    .item-card.status-ok .stock-display { color: var(--green); }
+    .item-card.status-low .stock-display { color: var(--yellow); }
+    .item-card.status-critical .stock-display { color: var(--red); }
+    .item-card.status-empty .stock-display { color: var(--text-sub); font-size: 14px; font-weight: 600; }
+    .item-card .unit-label {
+      font-size: 10px;
+      color: var(--text-sub);
+    }
+    .item-card .status-badge {
+      position: absolute;
+      top: 6px; right: 6px;
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 6px;
+      font-weight: 700;
+    }
+    .status-ok .status-badge { background: var(--green-light); color: var(--green); }
+    .status-low .status-badge { background: var(--yellow-light); color: var(--yellow); }
+    .status-critical .status-badge { background: var(--red-light); color: var(--red); }
 
     /* Modal */
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.5);
+      background: rgba(0,0,0,0.55);
       display: flex;
       align-items: flex-end;
       justify-content: center;
       z-index: 1000;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.2s;
+      transition: opacity 0.25s;
     }
     .modal-overlay.show {
       opacity: 1;
@@ -122,33 +294,32 @@
       background: white;
       border-radius: 24px 24px 0 0;
       width: 100%;
-      max-width: 420px;
-      padding: 24px;
+      max-width: 480px;
+      padding: 28px 24px 40px;
       transform: translateY(100%);
-      transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+      transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
     }
     .modal-overlay.show .modal {
       transform: translateY(0);
     }
     .modal-handle {
-      width: 36px;
-      height: 4px;
+      width: 36px; height: 4px;
       background: #DDD;
       border-radius: 2px;
       margin: 0 auto 20px;
     }
     .modal-title {
-      font-size: 18px;
-      font-weight: 700;
+      font-size: 22px;
+      font-weight: 800;
       text-align: center;
-      color: #333;
+      color: var(--text);
       margin-bottom: 4px;
     }
     .modal-sub {
       text-align: center;
       font-size: 13px;
-      color: #999;
-      margin-bottom: 20px;
+      color: var(--text-sub);
+      margin-bottom: 24px;
     }
     .modal-input-wrap {
       display: flex;
@@ -158,70 +329,91 @@
     }
     .modal-input {
       flex: 1;
-      padding: 18px;
-      font-size: 28px;
-      font-weight: 700;
+      padding: 20px;
+      font-size: 32px;
+      font-weight: 800;
       text-align: center;
-      border: 2px solid #FF8C00;
-      border-radius: 14px;
+      border: 2.5px solid var(--orange);
+      border-radius: 16px;
       outline: none;
       background: #FFF;
       color: #000;
       -webkit-text-fill-color: #000 !important;
       width: 100%;
+      box-shadow: 0 0 0 4px rgba(255,140,0,0.1);
     }
-    .modal-input::placeholder { color: #CCC; font-size: 20px; }
-    .modal-unit { font-size: 16px; color: #666; min-width: 40px; }
+    .modal-input::placeholder { color: #CCC; font-size: 22px; font-weight: 600; }
+    .modal-unit { font-size: 16px; color: var(--text-sub); min-width: 40px; font-weight: 600; }
     .modal-submit {
       width: 100%;
       padding: 16px;
-      background: #FF8C00;
+      background: linear-gradient(135deg, #FF8C00, #FF6B00);
       color: white;
       border: none;
       border-radius: 14px;
       font-size: 16px;
       font-weight: 700;
       cursor: pointer;
+      box-shadow: 0 4px 16px rgba(255,140,0,0.35);
+      transition: transform 0.15s, box-shadow 0.15s;
     }
-    .modal-submit:disabled { background: #CCC; }
+    .modal-submit:active { transform: scale(0.97); }
+    .modal-submit:disabled { background: #CCC; box-shadow: none; }
     .modal-cancel {
       width: 100%;
       padding: 14px;
-      background: #F5F5F5;
-      color: #666;
+      background: var(--bg);
+      color: var(--text-sub);
       border: none;
       border-radius: 14px;
       font-size: 14px;
       margin-top: 10px;
       cursor: pointer;
+      font-weight: 600;
     }
 
-    /* Status */
-    .status-bar {
-      padding: 12px 16px;
-      border-radius: 10px;
+    /* Status Toast */
+    .toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      padding: 12px 24px;
+      border-radius: 50px;
       font-size: 14px;
-      margin: 12px;
-      display: none;
+      font-weight: 600;
+      z-index: 3000;
+      transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      white-space: nowrap;
     }
-    .status-bar.show { display: block; }
-    .status-bar.success { background: #E8F5E9; color: #2E7D32; }
-    .status-bar.error { background: #FFEBEE; color: #C62828; }
-    .status-bar.sending { background: #FFF3E0; color: #E65100; }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.success { background: var(--green); color: #fff; }
+    .toast.error { background: var(--red); color: #fff; }
+    .toast.sending { background: #555; color: #fff; }
 
     /* Loading */
     .loading-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(255,255,255,0.9);
+      background: rgba(255,255,255,0.95);
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       z-index: 2000;
-      font-size: 16px;
-      color: #666;
+      gap: 12px;
     }
     .loading-overlay.hidden { display: none; }
+    .loading-spinner {
+      width: 36px; height: 36px;
+      border: 4px solid #FFE0B2;
+      border-top-color: var(--orange);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 15px; color: #666; font-weight: 600; }
 
     /* Install hint */
     .install-hint {
@@ -229,52 +421,113 @@
       bottom: 80px;
       left: 12px;
       right: 12px;
-      background: #333;
+      background: #1A1A2E;
       color: white;
       padding: 14px 16px;
-      border-radius: 12px;
+      border-radius: 14px;
       font-size: 13px;
       text-align: center;
       z-index: 999;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
     }
-    .install-hint span { float: right; cursor: pointer; }
+    .install-hint b { color: var(--orange); }
+    .install-hint span { float: right; cursor: pointer; opacity: 0.7; }
   </style>
 </head>
 <body>
 
 <!-- Loading -->
 <div class="loading-overlay" id="loading">
-  🔄 連接資料庫中...
+  <div class="loading-spinner"></div>
+  <div class="loading-text">🔥 連接資料庫中...</div>
 </div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
 
 <div class="header">
-  <h1>🍗 鮮樂炸雞</h1>
-  <p>庫存填報系統</p>
-  <span class="conn-status connected" id="conn-status">🔥 已連線</span>
+  <div class="header-top">
+    <div>
+      <h1>🍗 鮮樂炸雞</h1>
+      <div class="conn-label">
+        <span class="conn-dot" id="conn-dot"></span>
+        <span id="conn-text">連線中...</span>
+      </div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:12px;opacity:0.8" id="today-label"></div>
+      <div style="font-size:11px;opacity:0.6" id="store-label">總店</div>
+    </div>
+  </div>
+
+  <!-- KPI Bar -->
+  <div class="kpi-bar">
+    <div class="kpi-card fill">
+      <div class="num" id="kpi-filled">0</div>
+      <div class="lbl">已填報</div>
+    </div>
+    <div class="kpi-card">
+      <div class="num" id="kpi-total">0</div>
+      <div class="lbl">總品項</div>
+    </div>
+    <div class="kpi-card alert" id="kpi-alert-card" style="display:none">
+      <div class="num" id="kpi-alert">0</div>
+      <div class="lbl">需補貨</div>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span>填報進度</span>
+      <span id="progress-pct">0%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+  </div>
 </div>
 
+<!-- Store Selector -->
 <div class="store-selector">
-  <button class="store-btn active" onclick="selectStore('總店')">🏠 總店</button>
-  <button class="store-btn" onclick="selectStore('麥金店')">🏪 麥金店</button>
+  <button class="store-btn active" id="btn-store-1" onclick="selectStore('總店')">🏠 總店</button>
+  <button class="store-btn" id="btn-store-2" onclick="selectStore('麥金店')">🏪 麥金店</button>
 </div>
 
-<div class="section-title">每日品項</div>
-<div class="item-grid" id="daily-grid"></div>
+<!-- Alert Banner -->
+<div class="alert-banner" id="alert-banner">
+  <div class="icon">🚨</div>
+  <div class="items">以下品項庫存不足：</div>
+  <div class="count-badge" id="alert-count">0</div>
+</div>
 
-<div class="section-title" style="margin-top:16px">每週品項</div>
-<div class="item-grid" id="weekly-grid"></div>
+<!-- Daily Section -->
+<div class="section">
+  <div class="section-head">
+    <div class="section-title daily">📅 每日品項</div>
+    <div class="section-count" id="daily-count">0/0</div>
+  </div>
+  <div class="item-grid" id="daily-grid"></div>
+</div>
 
-<div id="status-bar" class="status-bar"></div>
+<!-- Weekly Section -->
+<div class="section">
+  <div class="section-head">
+    <div class="section-title weekly">📦 每週品項</div>
+    <div class="section-count" id="weekly-count">0/0</div>
+  </div>
+  <div class="item-grid" id="weekly-grid"></div>
+</div>
 
 <!-- Modal -->
 <div class="modal-overlay" id="modal">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-title" id="modal-title">雞腿</div>
-    <div class="modal-sub" id="modal-sub">Đùi gà</div>
+    <div class="modal-title" id="modal-title">—</div>
+    <div class="modal-sub" id="modal-sub">—</div>
     <div class="modal-input-wrap">
       <input type="number" class="modal-input" id="modal-input" inputmode="numeric" placeholder="0">
-      <span class="modal-unit" id="modal-unit">盒</span>
+      <span class="modal-unit" id="modal-unit">—</span>
     </div>
     <button class="modal-submit" id="modal-submit" onclick="submitFromModal()">✅ 送出填報</button>
     <button class="modal-cancel" onclick="closeModal()">取消</button>
@@ -283,16 +536,15 @@
 
 <!-- Install hint (iPhone) -->
 <div class="install-hint" id="install-hint">
-  📱 iPhone：Safari 開啟後，點分享 → <b>加入主畫面</b>
+  📱 iPhone：Safari 開啟後，點分享按鈕 → <b>加入主畫面</b>
   <span onclick="this.parentElement.remove()">✕</span>
 </div>
 
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, doc, setDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  // Firebase 配置
   const firebaseConfig = {
     apiKey: "AIzaSyAaHj8E5WWQrllzqZC7OvrYsybhnFbm1T4",
     authDomain: "xianle-stock.firebaseapp.com",
@@ -302,171 +554,254 @@
     appId: "1:1029082693636:web:2c879df1c137b7a0433551"
   };
 
-  // 初始化 Firebase
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // ===== 品項資料 =====
+  // ===== 品項資料（已同步最新庫存表） =====
   const ITEMS = {
     daily: [
-      { id: 'D001', cn: '雞排', vi: 'Gà rán miếng (Lườn gà)', unit: '盒' },
-      { id: 'D002', cn: '雞腿', vi: 'Đùi gà', unit: '盒' },
-      { id: 'D003', cn: '雞翅', vi: 'Cánh gà', unit: '盒' },
-      { id: 'D004', cn: '鹹酥雞', vi: 'Gà popcorn (Gà không xương)', unit: '包' },
-      { id: 'D005', cn: '雞軟骨', vi: 'Sụn gà', unit: '包' },
-      { id: 'D006', cn: '甜不辣', vi: 'Chả cá sợi (Tianbu-la)', unit: '包' },
-      { id: 'D007', cn: '薯條', vi: 'Khoai tây nhỏ', unit: '包' },
-      { id: 'D008', cn: '脆薯', vi: 'Khoai tây to', unit: '包' },
-      { id: 'D009', cn: '青椒', vi: 'Ớt chuông xanh', unit: '包' },
-      { id: 'D010', cn: '玉米', vi: 'Ngô (Bắp)', unit: '包' },
-      { id: 'D011', cn: '四季豆', vi: 'Đậu cove màu xanh', unit: '包' },
-      { id: 'D012', cn: '杏鮑菇', vi: 'Nấm trắng', unit: '包' },
-      { id: 'D013', cn: '香菇', vi: 'Nấm nâu', unit: '包' },
-      { id: 'D014', cn: '豬血糕', vi: 'Tiết heo nếp / Miếng', unit: '包' },
-      { id: 'D015', cn: '雞蛋豆腐', vi: 'Đậu phụ trứng / Hộp', unit: '盒' },
-      { id: 'D016', cn: '雞脖子', vi: 'Cổ gà', unit: '包' },
-      { id: 'D017', cn: '耐炸油', vi: 'Dầu Rán', unit: '桶' },
-      { id: 'D018', cn: '脆皮粉', vi: 'Bột Ướt', unit: '包' },
-      { id: 'D019', cn: '白色雞排粉', vi: 'Bột Khô', unit: '包' },
+      { id: 'D001', cn: '雞排', vi: 'Gà rán miếng', unit: '盒', low: 2 },
+      { id: 'D002', cn: '雞腿', vi: 'Đùi gà', unit: '盒', low: 1 },
+      { id: 'D003', cn: '雞翅', vi: 'Cánh gà', unit: '盒', low: 1 },
+      { id: 'D004', cn: '鹹酥雞', vi: 'Gà popcorn', unit: '包', low: 5 },
+      { id: 'D005', cn: '雞軟骨', vi: 'Sụn gà', unit: '包', low: 3 },
+      { id: 'D006', cn: '甜不辣', vi: 'Chả cá sợi', unit: '包', low: 3 },
+      { id: 'D007', cn: '薯條', vi: 'Khoai tây nhỏ', unit: '包', low: 3 },
+      { id: 'D008', cn: '脆薯', vi: 'Khoai tây to', unit: '包', low: 2 },
+      { id: 'D009', cn: '青椒', vi: 'Ớt chuông xanh', unit: '包', low: 5 },
+      { id: 'D010', cn: '玉米', vi: 'Ngô (Bắp)', unit: '包', low: 5 },
+      { id: 'D011', cn: '四季豆', vi: 'Đậu cove', unit: '包', low: 5 },
+      { id: 'D012', cn: '杏鮑菇', vi: 'Nấm trắng', unit: '包', low: 5 },
+      { id: 'D013', cn: '香菇', vi: 'Nấm nâu', unit: '包', low: 5 },
+      { id: 'D014', cn: '豬血糕', vi: 'Tiết heo nếp', unit: '包', low: 15 },
+      { id: 'D015', cn: '雞蛋豆腐', vi: 'Đậu phụ trứng', unit: '盒', low: 5 },
+      { id: 'D016', cn: '雞脖子', vi: 'Cổ gà', unit: '包', low: 3 },
+      { id: 'D017', cn: '耐炸油', vi: 'Dầu Rán', unit: '桶', low: 2 },
+      { id: 'D018', cn: '脆皮粉', vi: 'Bột Ướt', unit: '包', low: 1 },
+      { id: 'D019', cn: '白色雞排粉', vi: 'Bột Khô', unit: '包', low: 1 },
     ],
     weekly: [
-      { id: 'W001', cn: '小卷天婦羅', vi: 'Tempura mực ống', unit: '包' },
-      { id: 'W002', cn: '包蛋天婦羅', vi: 'Tempura bọc trứng', unit: '包' },
-      { id: 'W003', cn: '地瓜', vi: 'Khoai lang / g', unit: '包' },
-      { id: 'W004', cn: '花枝丸', vi: 'Viên mực màu trắng to', unit: '包' },
-      { id: 'W005', cn: '虱脆丸', vi: 'Viên màu trắng nhỏ', unit: '包' },
-      { id: 'W006', cn: '豆干', vi: 'Đậu phụ vàng', unit: '包' },
-      { id: 'W007', cn: '百頁豆腐', vi: 'Đậu phụ màu trắng trong bao', unit: '包' },
-      { id: 'W008', cn: '起司條', vi: 'Phô mai que', unit: '包' },
-      { id: 'W009', cn: '魷米花', vi: 'Mực popcorn', unit: '包' },
-      { id: 'W010', cn: '牛蒡甜不辣', vi: 'Chả cá xâm', unit: '包' },
-      { id: 'W011', cn: '雞心', vi: 'Tim gà / Xiên', unit: '串' },
-      { id: 'W012', cn: '雞胗', vi: 'Mề gà / Xiên', unit: '串' },
-      { id: 'W013', cn: '皮蛋', vi: 'Trứng bắc thảo / Quả', unit: '顆' },
-      { id: 'W014', cn: '糯米腸', vi: 'Dồi nếp / Gói', unit: '包' },
-      { id: 'W015', cn: '銀絲卷', vi: 'Banh Bao', unit: '包' },
-      { id: 'W016', cn: '山藥捲', vi: 'Bánh khoai môn màu tím', unit: '捲' },
-      { id: 'W017', cn: '玲玲捲', vi: 'Váng đậu cuộn (Ling Ling Roll)', unit: '捲' },
-      { id: 'W018', cn: '鹹蛋黃芋泥球', vi: 'Viên khoai môn trứng muối', unit: '包' },
-      { id: 'W019', cn: '洋蔥圈', vi: 'Vòng hành tây chiên', unit: '包' },
-      { id: 'W020', cn: '可樂', vi: 'Cola', unit: '罐' },
-      { id: 'W021', cn: '雪碧', vi: 'Sprite', unit: '罐' },
-      { id: 'W022', cn: '竹籤', vi: 'Xiên', unit: '包' },
-      { id: 'W023', cn: '八兩紙袋', vi: 'Túi Giấy to', unit: '包' },
-      { id: 'W024', cn: '六兩紙袋', vi: 'Túi Giấy Vừa', unit: '包' },
-      { id: 'W025', cn: '四兩紙袋', vi: 'Túi Giấy Nhỏ', unit: '包' },
-      { id: 'W026', cn: '飲料袋', vi: 'Túi Chỉ Đựng Ức Gà', unit: '包' },
-      { id: 'W027', cn: '半斤提袋', vi: 'Túi Màu Vàng', unit: '包' },
-      { id: 'W028', cn: '四兩提袋', vi: 'Túi Màu Cam', unit: '包' },
+      { id: 'W001', cn: '小卷天婦羅', vi: 'Tempura mực ống', unit: '包', low: 1 },
+      { id: 'W002', cn: '包蛋天婦羅', vi: 'Tempura bọc trứng', unit: '包', low: 1 },
+      { id: 'W003', cn: '地瓜', vi: 'Khoai lang', unit: '包', low: 1 },
+      { id: 'W004', cn: '花枝丸', vi: 'Viên mực trắng', unit: '包', low: 1 },
+      { id: 'W005', cn: '虱脆丸', vi: 'Viên trắng nhỏ', unit: '包', low: 3 },
+      { id: 'W006', cn: '豆干', vi: 'Đậu phụ vàng', unit: '包', low: 2 },
+      { id: 'W007', cn: '百頁豆腐', vi: 'Đậu phụ trắng', unit: '包', low: 15 },
+      { id: 'W008', cn: '起司條', vi: 'Phô mai que', unit: '包', low: 2 },
+      { id: 'W009', cn: '魷米花', vi: 'Mực popcorn', unit: '包', low: 2 },
+      { id: 'W010', cn: '牛蒡甜不辣', vi: 'Chả cá xâm', unit: '包', low: 2 },
+      { id: 'W011', cn: '雞心', vi: 'Tim gà', unit: '串', low: 20 },
+      { id: 'W012', cn: '雞胗', vi: 'Mề gà', unit: '串', low: 20 },
+      { id: 'W013', cn: '皮蛋', vi: 'Trứng bắc thảo', unit: '顆', low: 6 },
+      { id: 'W014', cn: '糯米腸', vi: 'Dồi nếp', unit: '包', low: 5 },
+      { id: 'W015', cn: '銀絲卷', vi: 'Banh Bao', unit: '包', low: 3 },
+      { id: 'W016', cn: '山藥捲', vi: 'Bánh khoai môn', unit: '捲', low: 1 },
+      { id: 'W017', cn: '玲玲捲', vi: 'Ling Ling Roll', unit: '捲', low: 20 },
+      { id: 'W018', cn: '鹹蛋黃芋泥球', vi: 'Khoai môn trứng', unit: '包', low: 1 },
+      { id: 'W019', cn: '洋蔥圈', vi: 'Vòng hành tây', unit: '包', low: 4 },
+      { id: 'W020', cn: '可樂', vi: 'Cola', unit: '罐', low: 24 },
+      { id: 'W021', cn: '雪碧', vi: 'Sprite', unit: '罐', low: 24 },
+      { id: 'W022', cn: '竹籤', vi: 'Xiên', unit: '包', low: 2 },
+      { id: 'W023', cn: '八兩紙袋', vi: 'Túi Giấy to', unit: '包', low: 10 },
+      { id: 'W024', cn: '六兩紙袋', vi: 'Túi Giấy Vừa', unit: '包', low: 10 },
+      { id: 'W025', cn: '四兩紙袋', vi: 'Túi Giấy Nhỏ', unit: '包', low: 10 },
+      { id: 'W026', cn: '飲料袋', vi: 'Túi Ức Gà', unit: '包', low: 5 },
+      { id: 'W027', cn: '半斤提袋', vi: 'Túi Vàng', unit: '包', low: 5 },
+      { id: 'W028', cn: '四兩提袋', vi: 'Túi Cam', unit: '包', low: 8 },
     ]
   };
 
   // ===== 狀態 =====
   let currentStore = '總店';
   let currentItem = null;
-  let currentStock = {}; // 緩存當前庫存
+  let currentStock = {};
   let unsubscribe = null;
 
   // ===== 初始化 =====
   window.addEventListener('DOMContentLoaded', () => {
+    const now = new Date();
+    document.getElementById('today-label').textContent = now.toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' });
     renderDaily();
     renderWeekly();
+    updateKPI();
     document.getElementById('modal-input').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') submitFromModal();
     });
-    // 隱藏安裝提示（如果已安裝）
     if (navigator.standalone) {
       document.getElementById('install-hint').style.display = 'none';
     }
   });
 
-  // ===== 渲染品項 =====
-  window.renderDaily = function() {
-    const grid = document.getElementById('daily-grid');
-    grid.innerHTML = ITEMS.daily.map(item => buildItemCard(item)).join('');
-  };
+  // ===== 卡片狀態 helper =====
+  function getCardStatus(item, stock) {
+    if (stock === undefined || stock === null) return 'empty';
+    if (stock === 0) return 'critical';
+    if (stock <= item.low * 0.5) return 'critical';
+    if (stock <= item.low) return 'low';
+    return 'ok';
+  }
 
-  window.renderWeekly = function() {
-    const grid = document.getElementById('weekly-grid');
-    grid.innerHTML = ITEMS.weekly.map(item => buildItemCard(item)).join('');
-  };
+  function getStatusBadge(item, stock) {
+    const s = getCardStatus(item, stock);
+    if (s === 'ok') return '✓ 充足';
+    if (s === 'low') return '⚠ 偏低';
+    if (s === 'critical') return '✕ 急補';
+    return '○ 未填';
+  }
 
+  // ===== 構建卡片 =====
   function buildItemCard(item) {
     const stock = currentStock[item.id];
-    const stockText = stock !== undefined ? `<div class="current">庫存: ${stock}</div>` : '';
+    const status = getCardStatus(item, stock);
+    const badge = getStatusBadge(item, stock);
+    const stockDisplay = stock !== undefined
+      ? `<div class="stock-display">${stock}</div><div class="unit-label">${item.unit}</div>`
+      : `<div class="stock-display">—</div><div class="unit-label" style="opacity:0">—</div>`;
     return `
-      <div class="item-card" onclick="openModal('${item.id}')">
+      <div class="item-card status-${status}" onclick="openModal('${item.id}')">
+        <div class="status-badge">${badge}</div>
         <div class="name">${item.cn}</div>
         <div class="sub">${item.vi}</div>
-        ${stockText}
+        ${stockDisplay}
       </div>
     `;
+  }
+
+  // ===== 渲染 =====
+  window.renderDaily = function() {
+    document.getElementById('daily-grid').innerHTML = ITEMS.daily.map(buildItemCard).join('');
+    updateCounts();
+  };
+  window.renderWeekly = function() {
+    document.getElementById('weekly-grid').innerHTML = ITEMS.weekly.map(buildItemCard).join('');
+    updateCounts();
+  };
+
+  function updateCounts() {
+    const dailyFilled = ITEMS.daily.filter(i => currentStock[i.id] !== undefined).length;
+    const weeklyFilled = ITEMS.weekly.filter(i => currentStock[i.id] !== undefined).length;
+    document.getElementById('daily-count').textContent = `${dailyFilled}/${ITEMS.daily.length}`;
+    document.getElementById('weekly-count').textContent = `${weeklyFilled}/${ITEMS.weekly.length}`;
+  }
+
+  // ===== KPI 更新 =====
+  function updateKPI() {
+    const allItems = [...ITEMS.daily, ...ITEMS.weekly];
+    const total = allItems.length;
+    const filled = allItems.filter(i => currentStock[i.id] !== undefined).length;
+    const pct = total > 0 ? Math.round(filled / total * 100) : 0;
+
+    // 計算需補貨品項（庫存低於 low 警戒線）
+    const alertItems = allItems.filter(i => {
+      const s = currentStock[i.id];
+      return s !== undefined && s <= i.low;
+    });
+
+    document.getElementById('kpi-filled').textContent = filled;
+    document.getElementById('kpi-total').textContent = total;
+    document.getElementById('progress-pct').textContent = pct + '%';
+    document.getElementById('progress-fill').style.width = pct + '%';
+
+    const alertCard = document.getElementById('kpi-alert-card');
+    const alertBanner = document.getElementById('alert-banner');
+    if (alertItems.length > 0) {
+      alertCard.style.display = 'block';
+      document.getElementById('kpi-alert').textContent = alertItems.length;
+      alertBanner.classList.add('show');
+      document.getElementById('alert-count').textContent = alertItems.length + '項';
+      alertBanner.querySelector('.items').textContent =
+        alertItems.slice(0, 3).map(i => i.cn).join('、') +
+        (alertItems.length > 3 ? `...等${alertItems.length}項` : '');
+    } else {
+      alertCard.style.display = 'none';
+      alertBanner.classList.remove('show');
+    }
   }
 
   // ===== 選擇店別 =====
   window.selectStore = async function(store) {
     currentStore = store;
+    document.getElementById('store-label').textContent = store;
     document.querySelectorAll('.store-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.textContent.includes(store));
+      btn.classList.toggle('active',
+        (store === '總店' && btn.textContent.includes('總店')) ||
+        (store === '麥金店' && btn.textContent.includes('麥金店'))
+      );
     });
-    // 重新載入該店資料
     await loadStockData(store);
   };
 
-  // ===== 載入庫存資料 =====
+  // ===== 載入 Firebase =====
   async function loadStockData(store) {
-    const connStatus = document.getElementById('conn-status');
-    const loading = document.getElementById('loading');
-    
+    if (unsubscribe) unsubscribe();
     try {
-      // 即時監聽庫存變化
-      if (unsubscribe) unsubscribe();
-      
       const today = new Date().toISOString().split('T')[0];
-      const docId = `${store}_${today}`;
-      const docRef = doc(db, 'stock', docId);
-      
-      unsubscribe = onSnapshot(docRef, (snapshot) => {
-        if (snapshot.exists()) {
-          currentStock = snapshot.data().items || {};
+      const docRef = doc(db, 'stock', `${store}_${today}`);
+      unsubscribe = onSnapshot(docRef, (snap) => {
+        if (snap.exists()) {
+          const d = snap.data();
+          // 相容兩種格式
+          if (d.items && typeof d.items === 'object') {
+            currentStock = {};
+            for (const [k, v] of Object.entries(d.items)) {
+              currentStock[k] = typeof v === 'number' ? v
+                : (v?.integerValue !== undefined ? parseInt(v.integerValue) : v?.doubleValue);
+            }
+          } else {
+            currentStock = {};
+            for (const [k, v] of Object.entries(d)) {
+              if (k.startsWith('items.')) {
+                const id = k.replace('items.', '');
+                currentStock[id] = typeof v === 'number' ? v
+                  : (v?.integerValue !== undefined ? parseInt(v.integerValue) : v?.doubleValue);
+              }
+            }
+          }
         } else {
           currentStock = {};
         }
         renderDaily();
         renderWeekly();
-      }, (error) => {
-        console.error('Firestore error:', error);
-        connStatus.textContent = '❌ 連線失敗';
-        connStatus.className = 'conn-status error';
+        updateKPI();
+        document.getElementById('loading').classList.add('hidden');
+        setConnStatus(true);
+      }, (err) => {
+        console.error(err);
+        setConnStatus(false);
+        document.getElementById('loading').classList.add('hidden');
       });
-
-      loading.classList.add('hidden');
-      connStatus.textContent = '🔥 已連線';
-      connStatus.className = 'conn-status connected';
-    } catch (error) {
-      console.error('Load error:', error);
-      loading.classList.add('hidden');
-      connStatus.textContent = '❌ 連線失敗';
-      connStatus.className = 'conn-status error';
+    } catch (e) {
+      console.error(e);
+      setConnStatus(false);
+      document.getElementById('loading').classList.add('hidden');
     }
   }
 
-  // ===== 開啟 Modal =====
+  function setConnStatus(ok) {
+    const dot = document.getElementById('conn-dot');
+    const txt = document.getElementById('conn-text');
+    if (ok) {
+      dot.classList.remove('offline');
+      txt.textContent = '🔥 已連線';
+    } else {
+      dot.classList.add('offline');
+      txt.textContent = '❌ 連線失敗';
+    }
+  }
+
+  // ===== Modal =====
   window.openModal = function(itemId) {
     const allItems = [...ITEMS.daily, ...ITEMS.weekly];
     currentItem = allItems.find(i => i.id === itemId);
-    
     document.getElementById('modal-title').textContent = currentItem.cn;
     document.getElementById('modal-sub').textContent = currentItem.vi;
     document.getElementById('modal-unit').textContent = currentItem.unit;
-    document.getElementById('modal-input').value = currentStock[itemId] !== undefined ? currentStock[itemId] : '';
-    
-    const modal = document.getElementById('modal');
-    modal.classList.add('show');
-    setTimeout(() => document.getElementById('modal-input').focus(), 300);
+    document.getElementById('modal-input').value =
+      currentStock[itemId] !== undefined ? currentStock[itemId] : '';
+    document.getElementById('modal').classList.add('show');
+    setTimeout(() => document.getElementById('modal-input').focus(), 350);
   };
-
-  // ===== 關閉 Modal =====
   window.closeModal = function() {
     document.getElementById('modal').classList.remove('show');
     currentItem = null;
@@ -474,58 +809,46 @@
 
   // ===== 送出 =====
   window.submitFromModal = async function() {
-    const valueStr = document.getElementById('modal-input').value;
-    const value = parseFloat(valueStr);
-    const statusBar = document.getElementById('status-bar');
-    const submitBtn = document.getElementById('modal-submit');
-    
-    if (valueStr === '' || isNaN(value) || value < 0) {
-      showStatus('❌ 請輸入有效的數量', 'error');
+    const val = document.getElementById('modal-input').value;
+    const n = parseFloat(val);
+    const btn = document.getElementById('modal-submit');
+    if (val === '' || isNaN(n) || n < 0) {
+      showToast('❌ 請輸入有效的數量', 'error');
       return;
     }
-    
-    submitBtn.disabled = true;
-    showStatus(`送出中...`, 'sending');
-    
+    btn.disabled = true;
+    showToast('送出中...', 'sending');
     try {
       const today = new Date().toISOString().split('T')[0];
-      const docId = `${currentStore}_${today}`;
-      const docRef = doc(db, 'stock', docId);
-      
-      // 更新該品項
-      const updateData = {
-        [`items.${currentItem.id}`]: value,
+      await setDoc(doc(db, 'stock', `${currentStore}_${today}`), {
+        [`items.${currentItem.id}`]: n,
         updatedAt: serverTimestamp(),
-        store: currentStore,
-        date: today
-      };
-      
-      await setDoc(docRef, updateData, { merge: true });
-      
+        store: currentStore, date: today
+      }, { merge: true });
       closeModal();
-      showStatus(`✅ 已更新：${currentStore} ${currentItem.cn} = ${value} ${currentItem.unit}`, 'success');
-      submitBtn.disabled = false;
-    } catch (error) {
-      console.error('Submit error:', error);
-      showStatus(`❌ 更新失敗：${error.message}`, 'error');
-      submitBtn.disabled = false;
+      showToast(`✅ 已更新：${currentItem.cn} = ${n} ${currentItem.unit}`, 'success');
+    } catch (e) {
+      console.error(e);
+      showToast(`❌ 更新失敗：${e.message}`, 'error');
     }
+    btn.disabled = false;
   };
 
-  // ===== 顯示狀態 =====
-  window.showStatus = function(msg, type) {
-    const bar = document.getElementById('status-bar');
-    bar.textContent = msg;
-    bar.className = 'status-bar show ' + type;
-    setTimeout(() => { bar.className = 'status-bar'; }, 4000);
+  // ===== Toast =====
+  window.showToast = function(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast ${type} show`;
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => { t.classList.remove('show'); }, 3500);
   };
 
-  // 點外面關閉 Modal
+  // 點外面關閉
   document.getElementById('modal').addEventListener('click', (e) => {
     if (e.target.id === 'modal') closeModal();
   });
 
-  // 啟動：載入總店資料
+  // 啟動
   loadStockData('總店');
 </script>
 </body>
