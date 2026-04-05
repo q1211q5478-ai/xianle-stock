@@ -40,11 +40,13 @@ const SAFETY_STOCK = {
 
 // Firebase REST API 設定
 const FIREBASE_PROJECT_ID = 'xianle-stock';
-const FIREBASE_API_KEY = 'AIzaSyAaHj8E5WWQrllzqZC7OvrYsybhnFbm1T4'; // PWA 用的公開 API Key
+const FIREBASE_API_KEY = 'AIzaSyAaHj8E5WWQrllzqZC7OvrYsybhnFbm1T4';
 const COLLECTION_NAME = 'stock';
 
-// 發送 Telegram 訊息
+// ========== 發送 Telegram ==========
 function sendTelegram(message) {
+  return new Promise((resolve, reject) => {
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${encodeURIComponent(message)}`;
     https.get(url, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
@@ -56,28 +58,22 @@ function sendTelegram(message) {
   });
 }
 
-// 讀取 Firestore REST API
-async function readFirestoreDoc(docPath) {
+// ========== 讀取 Firestore REST API ==========
+function readFirestoreDoc(docPath) {
   return new Promise((resolve, reject) => {
-    // 使用 Firestore REST API
     const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/${COLLECTION_NAME}/${docPath}?key=${FIREBASE_API_KEY}`;
-    
     https.get(url, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
-        try {
-          const result = JSON.parse(data);
-          resolve(result);
-        } catch (e) {
-          reject(e);
-        }
+        try { resolve(JSON.parse(data)); }
+        catch (e) { reject(e); }
       });
     }).on('error', reject);
   });
 }
 
-// 解析 Firestore 文件資料
+// ========== 解析 Firestore 文件 ==========
 function parseFirestoreDoc(doc) {
   const items = {};
   if (doc.fields && doc.fields.items && doc.fields.items.mapValue) {
@@ -93,11 +89,9 @@ function parseFirestoreDoc(doc) {
   return items;
 }
 
-// 主程式
+// ========== 主程式 ==========
 async function checkStockAlerts() {
-  const today = new Date().toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
-  const docId = `stock_${today}`;
-  
+  const today = new Date().toISOString().split('T')[0];
   console.log(`📅 ${today} 庫存檢查`);
   
   const alerts = [];
@@ -109,13 +103,10 @@ async function checkStockAlerts() {
     
     try {
       const doc = await readFirestoreDoc(fullDocId);
-      
       if (doc.fields) {
         const items = parseFirestoreDoc(doc);
-        console.log(`  讀取成功，${Object.keys(items).length} 項資料`);
-        
-        // 檢查每項低於安全庫存
-        for (const [id, stock] of SAFETY_STOCK) {
+        console.log(`  讀取成功，${Object.keys(items).length} 項`);
+        for (const [id, stock] of Object.entries(SAFETY_STOCK)) {
           const currentQty = items[id];
           if (currentQty !== undefined && currentQty < stock.safety) {
             alerts.push({
@@ -136,7 +127,6 @@ async function checkStockAlerts() {
     }
   }
 
-  // 發送通知
   console.log(`\n⚠️ 低於安全庫存: ${alerts.length} 項`);
   
   if (alerts.length > 0) {
@@ -164,12 +154,12 @@ async function checkStockAlerts() {
     
     try {
       await sendTelegram(message);
-      console.log('✅ 通知已發送到 Telegram');
+      console.log('✅ 通知已發送');
     } catch (e) {
       console.error('❌ 發送失敗:', e.message);
     }
   } else {
-    console.log('✅ 所有品項庫存正常');
+    console.log('✅ 所有品項正常');
   }
 }
 
