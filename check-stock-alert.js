@@ -41,11 +41,10 @@ const SAFETY_STOCK = {
 // Firebase REST API 設定
 const FIREBASE_PROJECT_ID = 'xianle-stock';
 const FIREBASE_API_KEY = 'AIzaSyAaHj8E5WWQrllzqZC7OvrYsybhnFbm1T4'; // PWA 用的公開 API Key
+const COLLECTION_NAME = 'stock';
 
 // 發送 Telegram 訊息
 function sendTelegram(message) {
-  return new Promise((resolve, reject) => {
-    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${encodeURIComponent(message)}`;
     https.get(url, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
@@ -61,7 +60,7 @@ function sendTelegram(message) {
 async function readFirestoreDoc(docPath) {
   return new Promise((resolve, reject) => {
     // 使用 Firestore REST API
-    const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/${docPath}?key=${FIREBASE_API_KEY}`;
+    const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/${COLLECTION_NAME}/${docPath}?key=${FIREBASE_API_KEY}`;
     
     https.get(url, (res) => {
       let data = '';
