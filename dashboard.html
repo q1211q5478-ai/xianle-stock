@@ -8,20 +8,26 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #1a1a2e;
+      background: #0f0f1a;
       color: #fff;
       min-height: 100vh;
-      padding: 20px;
+      padding: 16px;
     }
+
+    /* Header */
     .header {
       text-align: center;
-      padding: 20px 0;
-      border-bottom: 1px solid #333;
-      margin-bottom: 20px;
+      padding: 20px 0 16px;
+      margin-bottom: 16px;
     }
-    .header h1 { font-size: 24px; color: #FF8C00; }
-    .header p { font-size: 12px; color: #888; margin-top: 4px; }
+    .header h1 { 
+      font-size: 28px; 
+      color: #FF8C00; 
+      text-shadow: 0 0 20px rgba(255,140,0,0.3);
+    }
+    .header p { font-size: 13px; color: #666; margin-top: 6px; }
 
+    /* Store Selector */
     .stores {
       display: flex;
       gap: 12px;
@@ -29,97 +35,125 @@
     }
     .store-btn {
       flex: 1;
-      padding: 16px;
-      background: #16213e;
+      padding: 18px;
+      background: linear-gradient(145deg, #1a1a2e, #16213e);
       border: 2px solid #333;
-      border-radius: 12px;
+      border-radius: 16px;
       color: #888;
-      font-size: 16px;
-      font-weight: 600;
+      font-size: 18px;
+      font-weight: 700;
       cursor: pointer;
+      transition: all 0.3s;
     }
     .store-btn.active {
       border-color: #FF8C00;
-      color: #FF8C00;
-      background: #1a1a2e;
+      background: linear-gradient(145deg, #FF8C00, #e07800);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(255,140,0,0.4);
+      transform: scale(1.02);
     }
 
+    /* Date Nav */
     .date-nav {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
+      background: #1a1a2e;
+      padding: 12px 16px;
+      border-radius: 12px;
     }
     .date-nav button {
-      padding: 10px 16px;
-      background: #16213e;
-      border: 1px solid #333;
+      padding: 10px 18px;
+      background: #333;
+      border: none;
       border-radius: 8px;
       color: #fff;
+      font-size: 16px;
       cursor: pointer;
     }
     .date-nav span {
       flex: 1;
       text-align: center;
-      font-size: 16px;
-      font-weight: 600;
+      font-size: 18px;
+      font-weight: 700;
+      color: #FF8C00;
     }
 
-    .summary {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-    .summary .card {
-      background: #16213e;
-      border-radius: 12px;
-      padding: 16px;
-      text-align: center;
-    }
-    .summary .card .val { font-size: 28px; font-weight: 700; color: #FF8C00; }
-    .summary .card .lab { font-size: 11px; color: #888; margin-top: 4px; }
-
+    /* Section Title */
     .section-title {
-      font-size: 12px;
-      color: #888;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 12px;
-      padding-left: 4px;
-    }
-
-    .stock-list {
-      background: #16213e;
-      border-radius: 16px;
-      overflow: hidden;
-    }
-    .stock-item {
       display: flex;
       align-items: center;
-      padding: 14px 16px;
-      border-bottom: 1px solid #333;
-    }
-    .stock-item:last-child { border-bottom: none; }
-    .stock-item .name { flex: 1; }
-    .stock-item .name .cn { font-size: 15px; font-weight: 600; }
-    .stock-item .name .vi { font-size: 11px; color: #666; }
-    .stock-item .stock {
+      gap: 10px;
       font-size: 20px;
       font-weight: 700;
-      min-width: 60px;
-      text-align: right;
+      color: #fff;
+      margin: 24px 0 14px;
+      padding: 12px 16px;
+      background: linear-gradient(90deg, #FF8C00 0%, transparent 100%);
+      border-radius: 10px;
+      border-left: 4px solid #fff;
     }
-    .stock-item .stock.low { color: #ff4444; }
-    .stock-item .stock.ok { color: #4CAF50; }
-    .stock-item .unit { font-size: 12px; color: #888; margin-left: 4px; }
+    .section-title.daily { background: linear-gradient(90deg, #FF8C00 0%, transparent 100%); }
+    .section-title.weekly { background: linear-gradient(90deg, #4CAF50 0%, transparent 100%); }
 
+    /* Item Grid */
+    .item-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .item-card {
+      background: linear-gradient(145deg, #1a1a2e, #16213e);
+      border-radius: 16px;
+      padding: 20px 16px;
+      text-align: center;
+      border: 1px solid #333;
+      transition: all 0.2s;
+    }
+    .item-card.has-stock {
+      border-color: #333;
+    }
+    .item-card .cn { 
+      font-size: 22px; 
+      font-weight: 800; 
+      color: #fff;
+      margin-bottom: 6px;
+    }
+    .item-card .vi { 
+      font-size: 13px; 
+      color: #666;
+      margin-bottom: 10px;
+    }
+    .item-card .stock {
+      font-size: 36px;
+      font-weight: 900;
+      color: #FF8C00;
+      text-shadow: 0 0 15px rgba(255,140,0,0.4);
+    }
+    .item-card .stock.low { color: #ff4444; text-shadow: 0 0 15px rgba(255,68,68,0.4); }
+    .item-card .stock.ok { color: #4CAF50; text-shadow: 0 0 15px rgba(76,175,80,0.4); }
+    .item-card .unit { 
+      font-size: 14px; 
+      color: #888;
+      margin-top: 4px;
+    }
+    .item-card .no-data {
+      font-size: 14px;
+      color: #444;
+      font-style: italic;
+    }
+
+    /* Loading */
     .loading {
       text-align: center;
       padding: 40px;
-      color: #888;
+      color: #666;
+      font-size: 16px;
     }
 
+    /* Debug */
     .debug {
       background: #0a0a15;
       border: 1px solid #333;
@@ -130,14 +164,15 @@
       font-size: 11px;
       white-space: pre-wrap;
       word-break: break-all;
+      display: none;
     }
   </style>
 </head>
 <body>
 
 <div class="header">
-  <h1>🍗 鮮樂炸雞 - 老闆視角</h1>
-  <p id="update-time">載入中...</p>
+  <h1>🍗 鮮樂炸雞</h1>
+  <p>老闆視角</p>
 </div>
 
 <div class="stores">
@@ -151,25 +186,9 @@
   <button onclick="changeDate(1)">▶</button>
 </div>
 
-<div class="debug" id="debug">除錯資訊...</div>
+<div class="debug" id="debug"></div>
 
-<div class="summary">
-  <div class="card">
-    <div class="val" id="total-items">-</div>
-    <div class="lab">品項數</div>
-  </div>
-  <div class="card">
-    <div class="val" id="low-stock-count">-</div>
-    <div class="lab">低庫存品項</div>
-  </div>
-  <div class="card">
-    <div class="val" id="last-update">-</div>
-    <div class="lab">最後更新</div>
-  </div>
-</div>
-
-<div class="section-title">📦 庫存明細</div>
-<div class="stock-list" id="stock-list">
+<div id="content">
   <div class="loading">載入中...</div>
 </div>
 
@@ -221,7 +240,6 @@
 
   let currentStore = '總店';
   let currentDate = new Date().toISOString().split('T')[0];
-  let allItems = [...ITEMS.daily, ...ITEMS.weekly];
 
   window.selectStore = function(store) {
     currentStore = store;
@@ -241,19 +259,17 @@
     const docId = `${currentStore}_${currentDate}`;
     const docRef = doc(db, 'stock', docId);
     const debugEl = document.getElementById('debug');
-    const listEl = document.getElementById('stock-list');
+    const contentEl = document.getElementById('content');
 
-    debugEl.textContent = `載入中... ${currentStore} ${docId}`;
-    listEl.innerHTML = '<div class="loading">載入中...</div>';
+    contentEl.innerHTML = '<div class="loading">載入中...</div>';
 
     try {
       const snapshot = await getDoc(docRef);
-      debugEl.textContent = `存在: ${snapshot.exists()}\n文件ID: ${docId}\n資料: ${JSON.stringify(snapshot.data(), null, 2)}`;
       
       const data = snapshot.data() || {};
       const items = {};
       
-      // 直接檢查 items 物件（Firebase SDK 已經幫我們解析）
+      // 解析 items（Firebase SDK 已經幫我們解析）
       if (data.items && typeof data.items === 'object') {
         for (const [key, value] of Object.entries(data.items)) {
           if (typeof value === 'number') {
@@ -262,55 +278,50 @@
             items[key] = value.integerValue !== undefined ? parseInt(value.integerValue, 10) : parseFloat(value.doubleValue, 10);
           }
         }
-      } else {
-        // 備援：遍歷所有 key
-        for (const [key, value] of Object.entries(data)) {
-          if (key.startsWith('items.')) {
-            const itemId = key.replace('items.', '');
-            if (typeof value === 'number') {
-              items[itemId] = value;
-            } else if (value && (value.integerValue !== undefined || value.doubleValue !== undefined)) {
-              items[itemId] = value.integerValue !== undefined ? parseInt(value.integerValue, 10) : parseFloat(value.doubleValue, 10);
-            }
-          }
-        }
       }
       
-      debugEl.textContent = `解析後 items: ${JSON.stringify(items, null, 2)}`;
-      renderStock(items);
+      debugEl.textContent = `items: ${JSON.stringify(items)}`;
+      renderContent(items);
     } catch (e) {
       debugEl.textContent = '錯誤: ' + e.message;
-      listEl.innerHTML = '<div class="loading">載入失敗: ' + e.message + '</div>';
+      contentEl.innerHTML = '<div class="loading">載入失敗: ' + e.message + '</div>';
     }
   }
 
-  function renderStock(items) {
-    const listEl = document.getElementById('stock-list');
-    const alertList = [];
-    let lowCount = 0;
+  function renderContent(items) {
+    const contentEl = document.getElementById('content');
+    
+    let html = `
+      <div class="section-title daily">📅 每日品項</div>
+      <div class="item-grid">
+        ${ITEMS.daily.map(item => buildItemCard(item, items)).join('')}
+      </div>
+      
+      <div class="section-title weekly">📦 每週品項</div>
+      <div class="item-grid">
+        ${ITEMS.weekly.map(item => buildItemCard(item, items)).join('')}
+      </div>
+    `;
+    
+    contentEl.innerHTML = html;
+  }
 
-    let html = allItems.map(item => {
-      const val = items[item.id] !== undefined ? items[item.id] : '-';
-      const isLow = val !== '-' && val < item.low;
-      if (isLow) {
-        lowCount++;
-        alertList.push({ name: item.cn, current: val, need: item.order, unit: item.unit });
-      }
-      const cls = val === '-' ? '' : (isLow ? 'low' : 'ok');
-      return `
-        <div class="stock-item">
-          <div class="name"><div class="cn">${item.cn}</div><div class="vi">${item.vi}</div></div>
-          <div class="stock ${cls}">${val}</div>
-          <div class="unit">${item.unit}</div>
-        </div>
-      `;
-    }).join('');
-
-    listEl.innerHTML = html;
-    document.getElementById('total-items').textContent = allItems.length;
-    document.getElementById('low-stock-count').textContent = lowCount;
-    document.getElementById('last-update').textContent = currentStore;
-    document.getElementById('update-time').textContent = `📅 ${currentDate} | ${currentStore}`;
+  function buildItemCard(item, items) {
+    const val = items[item.id];
+    const hasStock = val !== undefined;
+    const isLow = hasStock && val < item.low;
+    const stockClass = hasStock ? (isLow ? 'low' : 'ok') : '';
+    
+    return `
+      <div class="item-card ${hasStock ? 'has-stock' : ''}">
+        <div class="cn">${item.cn}</div>
+        <div class="vi">${item.vi}</div>
+        ${hasStock 
+          ? `<div class="stock ${stockClass}">${val}</div><div class="unit">${item.unit}</div>`
+          : `<div class="no-data">尚無資料</div>`
+        }
+      </div>
+    `;
   }
 
   // Init
