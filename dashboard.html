@@ -270,9 +270,6 @@
       const items = {};
       
       // 解析 items
-      const items = {};
-      const data = snapshot.data() || {};
-      
       // 方法1：檢查 Firebase SDK 解析後的 items 物件
       if (data.items && typeof data.items === 'object') {
         for (const [key, value] of Object.entries(data.items)) {
