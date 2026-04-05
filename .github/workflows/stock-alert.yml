@@ -20,9 +20,16 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Write Firebase credentials
+        run: |
+          cat > /tmp/firebase-key.json << 'KEYEOF'
+          ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          KEYEOF
+          ls -la /tmp/firebase-key.json
+          
       - name: Run alert check
         env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/firebase-key.json
           FIREBASE_PROJECT_ID: xianle-stock
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

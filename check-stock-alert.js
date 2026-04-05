@@ -3,6 +3,7 @@
 
 const https = require('https');
 const fs = require('fs');
+const path = require('path');
 const { GoogleAuth } = require('google-auth-library');
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -88,12 +89,13 @@ async function checkStockAlerts() {
   // 使用 Google Auth Library 取得 access token
   let accessToken;
   try {
-    // 從環境變數讀取 service account JSON
-    const credJson = process.env.FIREBASE_SERVICE_ACCOUNT;
-    if (!credJson) {
-      throw new Error('Missing FIREBASE_SERVICE_ACCOUNT env var');
-    }
-    const creds = JSON.parse(credJson);
+    const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    console.log('使用憑證檔案:', credPath);
+    
+    // 讀取並驗證憑證檔案
+    const credsContent = fs.readFileSync(credPath, 'utf8');
+    const creds = JSON.parse(credsContent);
+    console.log('服務帳號:', creds.client_email);
     
     const auth = new GoogleAuth({
       credentials: creds,
@@ -109,6 +111,10 @@ async function checkStockAlerts() {
     console.log('取得 Access Token 成功');
   } catch (e) {
     console.error('取得 Access Token 失敗:', e.message);
+    if (fs.existsSync(process.env.GOOGLE_APPLICATION_CREDENTIALS)) {
+      const content = fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS, 'utf8');
+      console.error('憑證檔案內容(前200字):', content.substring(0, 200));
+    }
     process.exit(1);
   }
 
