@@ -269,7 +269,11 @@
       const data = snapshot.data() || {};
       const items = {};
       
-      // 解析 items（Firebase SDK 已經幫我們解析）
+      // 解析 items
+      const items = {};
+      const data = snapshot.data() || {};
+      
+      // 方法1：檢查 Firebase SDK 解析後的 items 物件
       if (data.items && typeof data.items === 'object') {
         for (const [key, value] of Object.entries(data.items)) {
           if (typeof value === 'number') {
@@ -280,7 +284,21 @@
         }
       }
       
-      debugEl.textContent = `items: ${JSON.stringify(items)}`;
+      // 方法2：檢查扁平的欄位（items.D001, items.D002...）
+      for (const [key, value] of Object.entries(data)) {
+        if (key.startsWith('items.')) {
+          const itemId = key.replace('items.', '');
+          if (!items[itemId]) { // 還沒解析過
+            if (typeof value === 'number') {
+              items[itemId] = value;
+            } else if (value && (value.integerValue !== undefined || value.doubleValue !== undefined)) {
+              items[itemId] = value.integerValue !== undefined ? parseInt(value.integerValue, 10) : parseFloat(value.doubleValue, 10);
+            }
+          }
+        }
+      }
+      
+      debugEl.textContent = `解析 items: ${JSON.stringify(items)}`;
       renderContent(items);
     } catch (e) {
       debugEl.textContent = '錯誤: ' + e.message;
