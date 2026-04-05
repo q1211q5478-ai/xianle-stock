@@ -88,9 +88,15 @@ async function checkStockAlerts() {
   // 使用 Google Auth Library 取得 access token
   let accessToken;
   try {
-    const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    // 從環境變數讀取 service account JSON
+    const credJson = process.env.FIREBASE_SERVICE_ACCOUNT;
+    if (!credJson) {
+      throw new Error('Missing FIREBASE_SERVICE_ACCOUNT env var');
+    }
+    const creds = JSON.parse(credJson);
+    
     const auth = new GoogleAuth({
-      keyFile: credPath,
+      credentials: creds,
       scopes: ['https://www.googleapis.com/auth/cloud-platform']
     });
     const client = await auth.getClient();

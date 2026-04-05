@@ -20,15 +20,10 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Create Firebase credentials file
-        run: |
-          cat > firebase-credentials.json << 'CREDJSON'
-          ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          CREDJSON
-          
       - name: Run alert check
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_PROJECT_ID: xianle-stock
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: node check-stock-alert.js
