@@ -21,11 +21,11 @@ jobs:
         run: npm install firebase-admin telegram
 
       - name: Create Firebase credentials file
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
-          echo '$FIREBASE_SERVICE_ACCOUNT' > firebase-credentials.json
-          echo "credentials file created"
+          cat > firebase-credentials.json << 'CREDJSON'
+          ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          CREDJSON
+          cat firebase-credentials.json | head -c 200
           
       - name: Run alert check
         env:
