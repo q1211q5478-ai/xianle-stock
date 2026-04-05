@@ -2,7 +2,8 @@
 // 每天定時檢查庫存，低於設定時發送 Telegram 通知
 
 const https = require('https');
-const { initializeApp } = require('firebase-admin/app');
+const fs = require('fs');
+const { initializeApp, cert } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -48,11 +49,27 @@ function sendTelegram(message) {
   });
 }
 
+async function initializeFirebase() {
+  const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  
+  if (credPath && fs.existsSync(credPath)) {
+    const creds = JSON.parse(fs.readFileSync(credPath, 'utf8'));
+    initializeApp({
+      credential: cert(creds)
+    });
+    console.log('Firebase 以服務帳號初始化');
+  } else {
+    // 作為最後手段，使用 Application Default Credentials
+    initializeApp();
+    console.log('Firebase 以 ADC 初始化');
+  }
+}
+
 async function checkStockAlerts() {
   console.log('開始檢查庫存...');
+  console.log('TIME:', new Date().toISOString());
 
-  // 使用 Application Default Credentials (由 google-github-actions/auth 設定)
-  initializeApp();
+  await initializeFirebase();
   const db = getFirestore();
 
   const today = new Date().toISOString().split('T')[0];
@@ -67,8 +84,9 @@ async function checkStockAlerts() {
       const doc = await db.collection('stock').doc(docId).get();
       if (doc.exists) {
         const items = doc.data().items || {};
-        checkStoreItems(store, items, alerts);
-        console.log(`  ${store}: 讀取成功`);
+        const storeAlerts = checkStoreItems(store, items);
+        alerts.push(...storeAlerts);
+        console.log(`  ${store}: 讀取成功, ${storeAlerts.length} 項低庫存`);
       } else {
         console.log(`  ${store}: 今日尚無資料`);
       }
@@ -84,14 +102,19 @@ async function checkStockAlerts() {
       `\n${'═'.repeat(20)}\n📱 鮮樂炸雞 庫存系統`;
 
     console.log('發送通知:', alerts.length, '項警示');
-    await sendTelegram(message);
-    console.log('✅ 通知已發送！');
+    try {
+      await sendTelegram(message);
+      console.log('✅ 通知已發送！');
+    } catch (e) {
+      console.error('發送失敗:', e.message);
+    }
   } else {
     console.log('✅ 今日無低庫存品項');
   }
 }
 
-function checkStoreItems(store, items, alerts) {
+function checkStoreItems(store, items) {
+  const alerts = [];
   for (const [id, threshold] of Object.entries(THRESHOLDS)) {
     const current = items[id];
     if (current !== undefined && current < threshold.low) {
@@ -104,6 +127,7 @@ function checkStoreItems(store, items, alerts) {
       });
     }
   }
+  return alerts;
 }
 
 // 執行
