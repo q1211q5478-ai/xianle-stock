@@ -247,7 +247,17 @@
 
     try {
       const snapshot = await getDoc(docRef);
-      const items = snapshot.exists() ? (snapshot.data().items || {}) : {};
+      // Firestore 資料是扁平的：items.D001, items.D002...
+      const data = snapshot.exists() ? snapshot.data() : {};
+      const items = {};
+      for (const [key, value] of Object.entries(data)) {
+        if (key.startsWith('items.')) {
+          const itemId = key.replace('items.', '');
+          if (value && (value.integerValue !== undefined || value.doubleValue !== undefined)) {
+            items[itemId] = value.integerValue !== undefined ? parseInt(value.integerValue, 10) : parseFloat(value.doubleValue, 10);
+          }
+        }
+      }
       renderStock(items);
     } catch (e) {
       listEl.innerHTML = '<div class="loading">載入失敗: ' + e.message + '</div>';
