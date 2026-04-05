@@ -1,0 +1,10 @@
+{
+  "name": "xianle-stock",
+  "version": "1.0.0",
+  "description": "鮮樂炸雞庫存系統",
+  "main": "check-stock-alert.js",
+  "scripts": {
+    "test": "node check-stock-alert.js --mock"
+  },
+  "dependencies": {}
+}

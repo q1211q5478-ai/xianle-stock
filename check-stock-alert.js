@@ -1,13 +1,12 @@
 // check-stock-alert.js
-// 每天定時檢查庫存，低於設定時發送 Telegram 通知
+// 使用 Firebase REST API 讀取 Firestore，發送 Telegram 通知
 
 const https = require('https');
-const fs = require('fs');
-const { initializeApp, cert } = require('firebase-admin/app');
-const { getFirestore } = require('firebase-admin/firestore');
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'xianle-stock';
+const FIREBASE_SERVICE_ACCOUNT = process.env.FIREBASE_SERVICE_ACCOUNT;
 
 const THRESHOLDS = {
   D001: { name: '雞腿', low: 10, order: 30, unit: '盒' },
@@ -35,6 +34,85 @@ const THRESHOLDS = {
   W008: { name: '花枝天婦羅', low: 5, order: 20, unit: '包' },
 };
 
+// 取得 Firebase Access Token
+function getAccessToken() {
+  return new Promise((resolve, reject) => {
+    if (!FIREBASE_SERVICE_ACCOUNT) {
+      reject(new Error('Missing FIREBASE_SERVICE_ACCOUNT'));
+      return;
+    }
+
+    const creds = JSON.parse(FIREBASE_SERVICE_ACCOUNT);
+    const jwt = createJWT(creds);
+    
+    const data = JSON.stringify({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: jwt
+    });
+
+    const options = {
+      hostname: 'oauth2.googleapis.com',
+      path: '/token',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(data)
+      }
+    };
+
+    const req = https.request(options, (res) => {
+      let body = '';
+      res.on('data', chunk => body += chunk);
+      res.on('end', () => {
+        try {
+          const result = JSON.parse(body);
+          if (result.access_token) {
+            resolve(result.access_token);
+          } else {
+            reject(new Error('No access token: ' + body));
+          }
+        } catch (e) {
+          reject(e);
+        }
+      });
+    });
+    req.on('error', reject);
+    req.write(data);
+    req.end();
+  });
+}
+
+// 建立 JWT token
+function createJWT(creds) {
+  const crypto = require('crypto');
+  
+  const now = Math.floor(Date.now() / 1000);
+  const expiry = now + 3600;
+  
+  const header = { alg: 'RS256', typ: 'JWT' };
+  const payload = {
+    iss: creds.client_email,
+    sub: creds.client_email,
+    aud: 'https://oauth2.googleapis.com/token',
+    iat: now,
+    exp: expiry,
+    scope: 'https://www.googleapis.com/auth/cloud-platform'
+  };
+
+  const base64Header = Buffer.from(JSON.stringify(header)).toString('base64url');
+  const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  
+  const signingInput = `${base64Header}.${base64Payload}`;
+  const signer = crypto.createSign('RSA-SHA256');
+  signer.update(signingInput);
+  
+  const privateKey = creds.private_key.replace(/\\n/g, '\n');
+  const signature = signer.sign(privateKey, 'base64url');
+  
+  return `${signingInput}.${signature}`;
+}
+
+// 發送 Telegram 訊息
 function sendTelegram(message) {
   return new Promise((resolve, reject) => {
     const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${encodeURIComponent(message)}`;
@@ -49,28 +127,51 @@ function sendTelegram(message) {
   });
 }
 
-async function initializeFirebase() {
-  const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-  
-  if (credPath && fs.existsSync(credPath)) {
-    const creds = JSON.parse(fs.readFileSync(credPath, 'utf8'));
-    initializeApp({
-      credential: cert(creds)
+// 讀取 Firestore 文件
+async function readFirestoreDoc(accessToken, docPath) {
+  return new Promise((resolve, reject) => {
+    const projectId = FIREBASE_PROJECT_ID;
+    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${docPath}?key=${accessToken}`;
+    
+    // 注意：使用 API key 或 access token
+    const options = {
+      hostname: 'firestore.googleapis.com',
+      path: `/v1/projects/${projectId}/databases/(default)/documents/${docPath}`,
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const result = JSON.parse(data);
+          resolve(result);
+        } catch (e) {
+          reject(e);
+        }
+      });
     });
-    console.log('Firebase 以服務帳號初始化');
-  } else {
-    // 作為最後手段，使用 Application Default Credentials
-    initializeApp();
-    console.log('Firebase 以 ADC 初始化');
-  }
+    req.on('error', reject);
+    req.end();
+  });
 }
 
 async function checkStockAlerts() {
   console.log('開始檢查庫存...');
   console.log('TIME:', new Date().toISOString());
 
-  await initializeFirebase();
-  const db = getFirestore();
+  let accessToken;
+  try {
+    accessToken = await getAccessToken();
+    console.log('取得 Access Token 成功');
+  } catch (e) {
+    console.error('取得 Access Token 失敗:', e.message);
+    process.exit(1);
+  }
 
   const today = new Date().toISOString().split('T')[0];
   const alerts = [];
@@ -81,9 +182,22 @@ async function checkStockAlerts() {
     console.log(`檢查 ${store}...`);
     
     try {
-      const doc = await db.collection('stock').doc(docId).get();
-      if (doc.exists) {
-        const items = doc.data().items || {};
+      const doc = await readFirestoreDoc(accessToken, docId);
+      
+      if (doc.fields) {
+        // 解析 Firestore 文件
+        const items = {};
+        if (doc.fields.items && doc.fields.items.mapValue) {
+          const itemFields = doc.fields.items.mapValue.fields;
+          for (const [key, value] of Object.entries(itemFields)) {
+            if (value.integerValue !== undefined) {
+              items[key] = parseInt(value.integerValue);
+            } else if (value.doubleValue !== undefined) {
+              items[key] = parseFloat(value.doubleValue);
+            }
+          }
+        }
+        
         const storeAlerts = checkStoreItems(store, items);
         alerts.push(...storeAlerts);
         console.log(`  ${store}: 讀取成功, ${storeAlerts.length} 項低庫存`);
