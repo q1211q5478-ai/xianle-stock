@@ -120,15 +120,17 @@
       color: #888;
     }
 
-    .alert-box {
-      background: #2d1f1f;
-      border: 1px solid #ff4444;
-      border-radius: 12px;
-      padding: 16px;
+    .debug {
+      background: #0a0a15;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 12px;
       margin-bottom: 20px;
+      font-family: monospace;
+      font-size: 11px;
+      white-space: pre-wrap;
+      word-break: break-all;
     }
-    .alert-box h3 { color: #ff4444; font-size: 14px; margin-bottom: 8px; }
-    .alert-box .item { padding: 6px 0; font-size: 13px; color: #f88; }
   </style>
 </head>
 <body>
@@ -149,10 +151,7 @@
   <button onclick="changeDate(1)">▶</button>
 </div>
 
-<div id="alert-box" class="alert-box" style="display:none">
-  <h3>🔔 低庫存警示</h3>
-  <div id="alert-list"></div>
-</div>
+<div class="debug" id="debug">除錯資訊...</div>
 
 <div class="summary">
   <div class="card">
@@ -241,25 +240,35 @@
   async function loadData() {
     const docId = `${currentStore}_${currentDate}`;
     const docRef = doc(db, 'stock', docId);
+    const debugEl = document.getElementById('debug');
     const listEl = document.getElementById('stock-list');
 
+    debugEl.textContent = `載入中... ${currentStore} ${docId}`;
     listEl.innerHTML = '<div class="loading">載入中...</div>';
 
     try {
       const snapshot = await getDoc(docRef);
-      // Firestore 資料是扁平的：items.D001, items.D002...
-      const data = snapshot.exists() ? snapshot.data() : {};
+      debugEl.textContent = `存在: ${snapshot.exists()}\n文件ID: ${docId}\n資料: ${JSON.stringify(snapshot.data(), null, 2)}`;
+      
+      const data = snapshot.data() || {};
       const items = {};
+      
+      // 直接遍歷所有 key
       for (const [key, value] of Object.entries(data)) {
         if (key.startsWith('items.')) {
           const itemId = key.replace('items.', '');
-          if (value && (value.integerValue !== undefined || value.doubleValue !== undefined)) {
+          if (typeof value === 'number') {
+            items[itemId] = value;
+          } else if (value && (value.integerValue !== undefined || value.doubleValue !== undefined)) {
             items[itemId] = value.integerValue !== undefined ? parseInt(value.integerValue, 10) : parseFloat(value.doubleValue, 10);
           }
         }
       }
+      
+      debugEl.textContent = `解析後 items: ${JSON.stringify(items, null, 2)}`;
       renderStock(items);
     } catch (e) {
+      debugEl.textContent = '錯誤: ' + e.message;
       listEl.innerHTML = '<div class="loading">載入失敗: ' + e.message + '</div>';
     }
   }
@@ -287,24 +296,9 @@
     }).join('');
 
     listEl.innerHTML = html;
-
-    // Update summary
     document.getElementById('total-items').textContent = allItems.length;
     document.getElementById('low-stock-count').textContent = lowCount;
     document.getElementById('last-update').textContent = currentStore;
-
-    // Alert box
-    const alertBox = document.getElementById('alert-box');
-    const alertListEl = document.getElementById('alert-list');
-    if (alertList.length > 0) {
-      alertBox.style.display = 'block';
-      alertListEl.innerHTML = alertList.map(a =>
-        `<div class="item">⚠️ ${a.name}：${a.current}${a.unit}（建議進 ${a.need}${a.unit}）</div>`
-      ).join('');
-    } else {
-      alertBox.style.display = 'none';
-    }
-
     document.getElementById('update-time').textContent = `📅 ${currentDate} | ${currentStore}`;
   }
 
