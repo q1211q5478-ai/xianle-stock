@@ -1,8 +1,249 @@
-// ===== 設定 =====
-const SPREADSHEET_ID = '1EZG-wwb4o8aLcKd8MuEh1DWyZM1RFqpPPTyLWfGAFd4';
-const API_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyUqgTS1bnddKR9-Ca4bti-aT6VPpmJXlYbmSzFW1hsUJQZaxaKrOJbeUZ2D2zD33Lqcg/exec';
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>🍗 鮮樂炸雞 - 庫存填報</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #FAFAFA;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
 
-// ===== 品項資料（需與 Sheets 同步）=====
+    /* Header */
+    .header {
+      background: #FF8C00;
+      color: white;
+      padding: 20px 16px 16px;
+      text-align: center;
+    }
+    .header h1 { font-size: 20px; font-weight: 600; }
+    .header p { font-size: 12px; opacity: 0.9; margin-top: 4px; }
+
+    /* Store Selector */
+    .store-selector {
+      display: flex;
+      gap: 12px;
+      padding: 16px;
+      background: white;
+      margin: 12px;
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .store-btn {
+      flex: 1;
+      padding: 14px;
+      border: 2px solid #E0E0E0;
+      border-radius: 12px;
+      background: white;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .store-btn.active {
+      border-color: #FF8C00;
+      background: #FFF4E6;
+      color: #FF8C00;
+    }
+
+    /* Item Grid */
+    .section-title {
+      padding: 12px 16px 8px;
+      font-size: 12px;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .item-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      padding: 0 12px;
+    }
+    .item-card {
+      background: white;
+      border-radius: 14px;
+      padding: 16px 8px;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .item-card:active {
+      transform: scale(0.96);
+    }
+    .item-card .name { font-size: 14px; font-weight: 600; color: #333; }
+    .item-card .sub { font-size: 11px; color: #999; margin-top: 2px; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .modal-overlay.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .modal {
+      background: white;
+      border-radius: 24px 24px 0 0;
+      width: 100%;
+      max-width: 420px;
+      padding: 24px;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .modal-overlay.show .modal {
+      transform: translateY(0);
+    }
+    .modal-handle {
+      width: 36px;
+      height: 4px;
+      background: #DDD;
+      border-radius: 2px;
+      margin: 0 auto 20px;
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      text-align: center;
+      color: #333;
+      margin-bottom: 4px;
+    }
+    .modal-sub {
+      text-align: center;
+      font-size: 13px;
+      color: #999;
+      margin-bottom: 20px;
+    }
+    .modal-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .modal-input {
+      flex: 1;
+      padding: 18px;
+      font-size: 28px;
+      font-weight: 700;
+      text-align: center;
+      border: 2px solid #FF8C00;
+      border-radius: 14px;
+      outline: none;
+    }
+    .modal-unit {
+      font-size: 16px;
+      color: #666;
+      min-width: 40px;
+    }
+    .modal-submit {
+      width: 100%;
+      padding: 16px;
+      background: #FF8C00;
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .modal-cancel {
+      width: 100%;
+      padding: 14px;
+      background: #F5F5F5;
+      color: #666;
+      border: none;
+      border-radius: 14px;
+      font-size: 14px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+
+    /* Status */
+    .status-bar {
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      margin: 12px;
+      display: none;
+    }
+    .status-bar.show { display: block; }
+    .status-bar.success { background: #E8F5E9; color: #2E7D32; }
+    .status-bar.error { background: #FFEBEE; color: #C62828; }
+
+    /* Install hint */
+    .install-hint {
+      position: fixed;
+      bottom: 80px;
+      left: 12px;
+      right: 12px;
+      background: #333;
+      color: white;
+      padding: 14px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      text-align: center;
+      z-index: 999;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🍗 鮮樂炸雞</h1>
+  <p>庫存填報系統</p>
+</div>
+
+<div class="store-selector">
+  <button class="store-btn active" onclick="selectStore('總店')">🏠 總店</button>
+  <button class="store-btn" onclick="selectStore('麥金店')">🏪 麥金店</button>
+</div>
+
+<div class="section-title">每日品項</div>
+<div class="item-grid" id="daily-grid"></div>
+
+<div class="section-title" style="margin-top:16px">每週品項</div>
+<div class="item-grid" id="weekly-grid"></div>
+
+<div id="status-bar" class="status-bar"></div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-title">雞腿</div>
+    <div class="modal-sub" id="modal-sub">Đùi gà</div>
+    <div class="modal-input-wrap">
+      <input type="number" class="modal-input" id="modal-input" inputmode="numeric" placeholder="0">
+      <span class="modal-unit" id="modal-unit">盒</span>
+    </div>
+    <button class="modal-submit" id="modal-submit">✅ 送出填報</button>
+    <button class="modal-cancel" onclick="closeModal()">取消</button>
+  </div>
+</div>
+
+<!-- Install hint (iPhone) -->
+<div class="install-hint" id="install-hint">
+  📱 iPhone：用 Safari 開啟後，點分享 → <b>加入主畫面</b>
+</div>
+
+<script>
+// ===== 品項資料 =====
 const ITEMS = {
   daily: [
     { id: 'D001', cn: '雞腿', vi: 'Đùi gà', unit: '盒' },
@@ -36,256 +277,127 @@ const ITEMS = {
 // ===== 狀態 =====
 let currentStore = '總店';
 let currentItem = null;
-let stockData = {}; // 從 Sheets 載入的庫存資料
+
+// ===== API URL =====
+const API_URL = 'https://script.google.com/macros/s/AKfycbyUqgTS1bnddKR9-Ca4bti-aT6VPpmJXlYbmSzFW1hsUJQZaxaKrOJbeUZ2D2zD33Lqcg/exec';
 
 // ===== 初始化 =====
 document.addEventListener('DOMContentLoaded', () => {
-  renderItems();
-  loadStockData();
-  loadHistory();
+  renderDaily();
+  renderWeekly();
+  document.getElementById('modal-submit').onclick = submitFromModal;
+  document.getElementById('modal-input').onkeypress = (e) => {
+    if (e.key === 'Enter') submitFromModal();
+  };
 });
+
+// ===== 渲染品項 =====
+function renderDaily() {
+  const grid = document.getElementById('daily-grid');
+  grid.innerHTML = ITEMS.daily.map(item => `
+    <div class="item-card" onclick="openModal('${item.id}')">
+      <div class="name">${item.cn}</div>
+      <div class="sub">${item.vi}</div>
+    </div>
+  `).join('');
+}
+
+function renderWeekly() {
+  const grid = document.getElementById('weekly-grid');
+  grid.innerHTML = ITEMS.weekly.map(item => `
+    <div class="item-card" onclick="openModal('${item.id}')">
+      <div class="name">${item.cn}</div>
+      <div class="sub">${item.vi}</div>
+    </div>
+  `).join('');
+}
 
 // ===== 選擇店別 =====
 function selectStore(store) {
   currentStore = store;
-  document.querySelectorAll('.store-tab').forEach(tab => {
-    tab.classList.toggle('active', tab.querySelector('.name').textContent === store);
+  document.querySelectorAll('.store-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent.includes(store));
   });
-  currentItem = null;
-  updateSubmitBtn();
-  updateStockDisplay();
 }
 
-// ===== 渲染品項清單 =====
-function renderItems() {
-  const grid = document.getElementById('item-grid');
-  const allItems = [...ITEMS.daily, ...ITEMS.weekly];
-  
-  grid.innerHTML = allItems.map(item => `
-    <div class="item-btn" data-id="${item.id}" onclick="selectItem('${item.id}')">
-      <div class="cn">${item.cn}</div>
-      <div class="vi">${item.vi}</div>
-    </div>
-  `).join('');
-}
-
-// ===== 選擇品項 =====
-function selectItem(itemId) {
+// ===== 開啟 Modal =====
+function openModal(itemId) {
   const allItems = [...ITEMS.daily, ...ITEMS.weekly];
   currentItem = allItems.find(i => i.id === itemId);
   
-  document.querySelectorAll('.item-btn').forEach(btn => {
-    btn.classList.toggle('selected', btn.dataset.id === itemId);
-  });
+  document.getElementById('modal-title').textContent = currentItem.cn;
+  document.getElementById('modal-sub').textContent = currentItem.vi;
+  document.getElementById('modal-unit').textContent = currentItem.unit;
+  document.getElementById('modal-input').value = '';
   
-  // 顯示單位
-  document.getElementById('unit-display').textContent = currentItem.unit;
-  
-  updateSubmitBtn();
-  updateStockDisplay();
+  const modal = document.getElementById('modal');
+  modal.classList.add('show');
+  setTimeout(() => document.getElementById('modal-input').focus(), 300);
 }
 
-// ===== 更新庫存顯示 =====
-function updateStockDisplay() {
-  const display = document.getElementById('stock-display');
-  if (!currentItem) {
-    display.innerHTML = '請先選擇品項';
-    return;
-  }
-  
-  const key = `${currentStore}-${currentItem.id}`;
-  const stock = stockData[key];
-  
-  if (stock !== undefined) {
-    display.innerHTML = `目前系統存量：<strong>${stock}</strong> ${currentItem.unit}`;
-  } else {
-    display.innerHTML = '尚無系統記錄';
-  }
+// ===== 關閉 Modal =====
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+  currentItem = null;
 }
 
-// ===== 更新送出按鈕狀態 =====
-function updateSubmitBtn() {
-  const btn = document.getElementById('submit-btn');
-  btn.disabled = !currentItem || !document.getElementById('stock-input').value;
-}
-
-// ===== 從 Sheets 載入庫存資料 =====
-async function loadStockData() {
-  try {
-    const response = await fetch(`${API_SCRIPT_URL}?action=getStock&store=${encodeURIComponent(currentStore)}`);
-    const data = await response.json();
-    stockData = data;
-    updateStockDisplay();
-  } catch (e) {
-    console.log('尚未設定 API，或載入失敗:', e.message);
-    // 使用示範資料
-    stockData = {
-      '總店-D001': 25,
-      '總店-D002': 18,
-      '總店-D003': 12,
-      '總店-D004': 22,
-      '總店-D005': 15,
-      '麥金店-D001': 20,
-      '麥金店-D002': 15,
-      '麥金店-D004': 18,
-    };
-    updateStockDisplay();
-  }
-}
-
-// ===== 提交庫存 =====
-async function submitStock() {
-  if (!currentItem || !currentStore) return;
-  
-  const input = document.getElementById('stock-input');
-  const value = parseFloat(input.value);
+// ===== 送出 =====
+async function submitFromModal() {
+  const value = parseFloat(document.getElementById('modal-input').value);
   const statusBar = document.getElementById('status-bar');
-  const btn = document.getElementById('submit-btn');
   
   if (!value || value < 0) {
-    statusBar.className = 'status-bar error';
-    statusBar.textContent = '請輸入有效的數量';
+    showStatus('❌ 請輸入有效的數量', 'error');
     return;
   }
   
-  btn.disabled = true;
-  statusBar.className = 'status-bar';
-  statusBar.textContent = '送出中...';
+  closeModal();
+  showStatus(`送出中... ${currentStore} ${currentItem.cn} = ${value}`, '');
+  
+  // 使用 GET 方式
+  const url = `${API_URL}?action=updateStock&store=${encodeURIComponent(currentStore)}&itemId=${encodeURIComponent(currentItem.id)}&value=${value}`;
   
   try {
-    const response = await fetch(API_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'updateStock',
-        store: currentStore,
-        itemId: currentItem.id,
-        value: value
-      })
-    });
-    
+    const response = await fetch(url);
     const result = await response.json();
     
     if (result.success) {
-      statusBar.className = 'status-bar success';
-      statusBar.textContent = `✅ 已更新：${currentStore} ${currentItem.cn} = ${value} ${currentItem.unit}`;
-      
-      // 更新本地資料
-      const key = `${currentStore}-${currentItem.id}`;
-      stockData[key] = value;
-      
-      // 清空輸入
-      input.value = '';
-      currentItem = null;
-      document.querySelectorAll('.item-btn').forEach(b => b.classList.remove('selected'));
-      updateStockDisplay();
-      
-      // 加入歷史紀錄
-      addHistory(currentStore, currentItem ? currentItem.cn : '?', value, currentItem ? currentItem.unit : '');
-      
-      setTimeout(() => { statusBar.textContent = ''; }, 3000);
+      showStatus(`✅ 已更新：${currentStore} ${currentItem.cn} = ${value} ${currentItem.unit}`, 'success');
+      addHistory(currentItem.cn, value, currentItem.unit);
     } else {
-      throw new Error(result.error || '更新失敗');
+      showStatus(`❌ 更新失敗：${result.error}`, 'error');
     }
   } catch (e) {
-    statusBar.className = 'status-bar error';
-    statusBar.textContent = '❌ 更新失敗：' + e.message;
-    btn.disabled = false;
+    showStatus(`❌ 更新失敗：網路錯誤`, 'error');
   }
-  
-  btn.disabled = false;
 }
 
-// 輸入監聽
-document.getElementById('stock-input').addEventListener('input', updateSubmitBtn);
-
-// ===== 歷史紀錄 =====
-function loadHistory() {
-  const history = JSON.parse(localStorage.getItem('stockHistory') || '[]');
-  renderHistory(history);
+// ===== 顯示狀態 =====
+function showStatus(msg, type) {
+  const bar = document.getElementById('status-bar');
+  bar.textContent = msg;
+  bar.className = 'status-bar show ' + type;
+  setTimeout(() => { bar.className = 'status-bar'; }, 4000);
 }
 
-function addHistory(store, item, value, unit) {
+// ===== 歷史 =====
+function addHistory(itemName, value, unit) {
   const history = JSON.parse(localStorage.getItem('stockHistory') || '[]');
   history.unshift({
-    time: new Date().toLocaleString('zh-TW'),
-    store,
-    item,
-    value,
-    unit
+    time: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }),
+    store: currentStore,
+    item: itemName,
+    value: value,
+    unit: unit
   });
-  if (history.length > 20) history.pop();
+  if (history.length > 10) history.pop();
   localStorage.setItem('stockHistory', JSON.stringify(history));
-  renderHistory(history);
 }
 
-function renderHistory(history) {
-  const container = document.getElementById('history-list');
-  if (history.length === 0) {
-    container.innerHTML = '<div class="card-title">📋 最近填報紀錄</div><div style="color:#888;font-size:13px;text-align:center;padding:20px;">尚無紀錄</div>';
-    return;
-  }
-  
-  container.innerHTML = '<div class="card-title">📋 最近填報紀錄</div>' + history.slice(0, 10).map(h => `
-    <div class="history-item">
-      <span>${h.store} ${h.item}</span>
-      <span class="val">${h.value} ${h.unit}</span>
-      <span class="time">${h.time}</span>
-    </div>
-  `).join('');
-}
-
-// ===== 頁面切換 =====
-function switchPage(page) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  
-  if (page === 'report') {
-    document.getElementById('page-report').classList.add('active');
-    document.querySelectorAll('.nav-item')[0].classList.add('active');
-  } else {
-    document.getElementById('page-overview').classList.add('active');
-    document.querySelectorAll('.nav-item')[1].classList.add('active');
-    loadOverview();
-  }
-}
-
-// ===== 總覽頁面載入 =====
-async function loadOverview() {
-  const alertDiv = document.getElementById('alert-list');
-  alertDiv.innerHTML = '<div style="color:#888;text-align:center;">載入中...</div>';
-  
-  try {
-    // 示範顯示低庫存警示
-    alertDiv.innerHTML = `
-      <div style="color:#888;font-size:13px;">
-        ⚠️ 總店：雞腿 20盒（安全存量 20）<br>
-        🔴 麥金店：裹粉 8包（安全存量 10）
-      </div>
-    `;
-  } catch (e) {
-    alertDiv.innerHTML = '<div style="color:#888;">載入失敗</div>';
-  }
-}
-
-// ===== 安裝提示 =====
-if ('standalone' in navigator === false) {
-  document.write(`
-    <div id="install-hint" style="
-      position: fixed;
-      bottom: 80px;
-      left: 16px;
-      right: 16px;
-      background: #333;
-      color: white;
-      padding: 12px 16px;
-      border-radius: 12px;
-      font-size: 13px;
-      text-align: center;
-      z-index: 999;
-    ">
-      📱 按右上角 <b>分享</b> → <b>加到主畫面</b> 可安裝 App
-      <span onclick="document.getElementById('install-hint').remove()" style="float:right;cursor:pointer;">✕</span>
-    </div>
-  `);
-}
+// 點外面關閉 Modal
+document.getElementById('modal').onclick = (e) => {
+  if (e.target.id === 'modal') closeModal();
+};
+</script>
+</body>
+</html>
