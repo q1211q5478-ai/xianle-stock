@@ -1,5 +1,5 @@
 // check-stock-alert.js
-// 補貨警示系統：根據安全庫存計算進貨建議
+// 進貨建議系統：(7天日均用量 × 備貨天數) − 今日現貨 = 建議進貨量
 
 const https = require('https');
 
@@ -9,33 +9,32 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 // ========== 設定規則 ==========
 const REORDER_DAYS = 3; // 備貨天數
 
-// 安全庫存（低於此數量一定通知）
-const SAFETY_STOCK = {
-  // 每日品項
-  D001: { name: '雞腿', safety: 20, unit: '盒' },
-  D002: { name: '雞翅', safety: 20, unit: '盒' },
-  D003: { name: '雞塊', safety: 15, unit: '盒' },
-  D004: { name: '鹹酥雞', safety: 15, unit: '包' },
-  D005: { name: '薯條', safety: 10, unit: '包' },
-  D006: { name: '地瓜', safety: 10, unit: '包' },
-  D007: { name: '銀絲捲', safety: 10, unit: '包' },
-  D008: { name: '甜不辣', safety: 10, unit: '包' },
-  D009: { name: '天婦羅', safety: 10, unit: '包' },
-  D010: { name: '裹粉', safety: 10, unit: '包' },
-  D011: { name: '脆皮粉', safety: 10, unit: '包' },
-  D012: { name: '胡椒粉', safety: 5, unit: '罐' },
-  D013: { name: '梅粉', safety: 5, unit: '罐' },
-  D014: { name: '回鍋油', safety: 10, unit: '公升' },
-  D015: { name: '新油', safety: 15, unit: '公升' },
-  // 每週品項
-  W001: { name: '魚漿', safety: 10, unit: '公斤' },
-  W002: { name: '天婦羅皮', safety: 10, unit: '包' },
-  W003: { name: '甜不辣糊', safety: 10, unit: '公斤' },
-  W004: { name: '包蛋黑輪', safety: 15, unit: '條' },
-  W005: { name: '牛蒡天婦羅', safety: 10, unit: '包' },
-  W006: { name: '小卷天婦羅', safety: 10, unit: '包' },
-  W007: { name: '魷魚天婦羅', safety: 10, unit: '包' },
-  W008: { name: '花枝天婦羅', safety: 10, unit: '包' },
+// 各品項「平均每日用量」（7天滾動平均預估值）
+// 這個數字會根據實際使用資料動態更新
+const AVG_DAILY_USAGE = {
+  D001: { name: '雞腿', avg: 8, unit: '盒' },
+  D002: { name: '雞翅', avg: 6, unit: '盒' },
+  D003: { name: '雞塊', avg: 5, unit: '盒' },
+  D004: { name: '鹹酥雞', avg: 5, unit: '包' },
+  D005: { name: '薯條', avg: 4, unit: '包' },
+  D006: { name: '地瓜', avg: 3, unit: '包' },
+  D007: { name: '銀絲捲', avg: 3, unit: '包' },
+  D008: { name: '甜不辣', avg: 4, unit: '包' },
+  D009: { name: '天婦羅', avg: 4, unit: '包' },
+  D010: { name: '裹粉', avg: 3, unit: '包' },
+  D011: { name: '脆皮粉', avg: 3, unit: '包' },
+  D012: { name: '胡椒粉', avg: 1, unit: '罐' },
+  D013: { name: '梅粉', avg: 1, unit: '罐' },
+  D014: { name: '回鍋油', avg: 5, unit: '公升' },
+  D015: { name: '新油', avg: 8, unit: '公升' },
+  W001: { name: '魚漿', avg: 5, unit: '公斤' },
+  W002: { name: '天婦羅皮', avg: 5, unit: '包' },
+  W003: { name: '甜不辣糊', avg: 4, unit: '公斤' },
+  W004: { name: '包蛋黑輪', avg: 8, unit: '條' },
+  W005: { name: '牛蒡天婦羅', avg: 4, unit: '包' },
+  W006: { name: '小卷天婦羅', avg: 4, unit: '包' },
+  W007: { name: '魷魚天婦羅', avg: 4, unit: '包' },
+  W008: { name: '花枝天婦羅', avg: 4, unit: '包' },
 };
 
 // Firebase REST API 設定
@@ -92,9 +91,10 @@ function parseFirestoreDoc(doc) {
 // ========== 主程式 ==========
 async function checkStockAlerts() {
   const today = new Date().toISOString().split('T')[0];
+  const todayDisplay = new Date().toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
   console.log(`📅 ${today} 庫存檢查`);
   
-  const alerts = [];
+  const reorderList = [];
   const stores = ['總店', '麥金店'];
 
   for (const store of stores) {
@@ -106,17 +106,28 @@ async function checkStockAlerts() {
       if (doc.fields) {
         const items = parseFirestoreDoc(doc);
         console.log(`  讀取成功，${Object.keys(items).length} 項`);
-        for (const [id, stock] of Object.entries(SAFETY_STOCK)) {
+        
+        // 計算每項的建議進貨量
+        for (const [id, itemInfo] of Object.entries(AVG_DAILY_USAGE)) {
           const currentQty = items[id];
-          if (currentQty !== undefined && currentQty < stock.safety) {
-            alerts.push({
-              store,
-              id,
-              name: stock.name,
-              current: currentQty,
-              safety: stock.safety,
-              unit: stock.unit
-            });
+          if (currentQty !== undefined) {
+            // 建議進貨量 = (7天日均 × 備貨天數) − 今日現貨
+            const targetStock = itemInfo.avg * REORDER_DAYS;
+            const suggestedOrder = targetStock - currentQty;
+            
+            // 只在需要進貨時加入列表（suggestedOrder > 0）
+            if (suggestedOrder > 0) {
+              reorderList.push({
+                store,
+                id,
+                name: itemInfo.name,
+                current: currentQty,
+                avgDaily: itemInfo.avg,
+                target: targetStock,
+                order: suggestedOrder,
+                unit: itemInfo.unit
+              });
+            }
           }
         }
       } else {
@@ -127,39 +138,43 @@ async function checkStockAlerts() {
     }
   }
 
-  console.log(`\n⚠️ 低於安全庫存: ${alerts.length} 項`);
+  console.log(`\n📦 需要進貨: ${reorderList.length} 項`);
   
-  if (alerts.length > 0) {
-    const alertByStore = {};
-    for (const a of alerts) {
-      if (!alertByStore[a.store]) alertByStore[a.store] = [];
-      alertByStore[a.store].push(a);
+  if (reorderList.length > 0) {
+    // 按店別分組
+    const byStore = {};
+    for (const item of reorderList) {
+      if (!byStore[item.store]) byStore[item.store] = [];
+      byStore[item.store].push(item);
     }
     
-    let message = `🔔 鮮樂炸雞 低庫存警示\n${'━'.repeat(22)}\n`;
-    message += `📅 ${today}\n\n`;
+    let message = `📦 鮮樂炸雞 進貨建議\n`;
+    message += `${'━'.repeat(24)}\n`;
+    message += `📅 ${todayDisplay}\n`;
+    message += `📊 公式：(日均用量 × ${REORDER_DAYS}天) − 今日現貨\n\n`;
     
-    for (const [store, items] of Object.entries(alertByStore)) {
+    for (const [store, items] of Object.entries(byStore)) {
       message += `🏪 ${store}\n`;
       for (const item of items) {
-        message += `⚠️ ${item.name}\n`;
-        message += `   庫存: ${item.current}${item.unit} (安全: ${item.safety}${item.unit})\n`;
+        message += `🛒 ${item.name}\n`;
+        message += `   今日現貨: ${item.current}${item.unit}\n`;
+        message += `   日均用量: ${item.avg}${item.unit}\n`;
+        message += `   目標備量: ${item.target}${item.unit}\n`;
+        message += `   ✅ 建議進貨: ${item.order}${item.unit}\n\n`;
       }
-      message += `\n`;
     }
     
-    message += `${'━'.repeat(22)}\n`;
-    message += `📊 ${REORDER_DAYS}天備貨建議\n`;
+    message += `${'━'.repeat(24)}\n`;
     message += `🔗 https://q1211q5478-ai.github.io/xianle-stock/dashboard.html`;
     
     try {
       await sendTelegram(message);
-      console.log('✅ 通知已發送');
+      console.log('✅ 進貨建議已發送到 Telegram');
     } catch (e) {
       console.error('❌ 發送失敗:', e.message);
     }
   } else {
-    console.log('✅ 所有品項正常');
+    console.log('✅ 庫存充足，無需進貨');
   }
 }
 
