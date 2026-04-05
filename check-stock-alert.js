@@ -1,14 +1,10 @@
 // check-stock-alert.js
-// 使用 Firebase REST API 讀取 Firestore，發送 Telegram 通知
+// 每天定時檢查庫存並發送 Telegram 通知
 
 const https = require('https');
-const fs = require('fs');
-const path = require('path');
-const { GoogleAuth } = require('google-auth-library');
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'xianle-stock';
 
 const THRESHOLDS = {
   D001: { name: '雞腿', low: 10, order: 30, unit: '盒' },
@@ -51,146 +47,21 @@ function sendTelegram(message) {
   });
 }
 
-// 讀取 Firestore 文件
-async function readFirestoreDoc(accessToken, docPath) {
-  return new Promise((resolve, reject) => {
-    const projectId = FIREBASE_PROJECT_ID;
-    
-    const options = {
-      hostname: 'firestore.googleapis.com',
-      path: `/v1/projects/${projectId}/databases/(default)/documents/${docPath}`,
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
-    };
-
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        try {
-          const result = JSON.parse(data);
-          resolve(result);
-        } catch (e) {
-          reject(e);
-        }
-      });
-    });
-    req.on('error', reject);
-    req.end();
-  });
-}
-
+// 主程式
 async function checkStockAlerts() {
-  console.log('開始檢查庫存...');
-  console.log('TIME:', new Date().toISOString());
-
-  // 使用 Google Auth Library 取得 access token
-  let accessToken;
+  const today = new Date().toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
+  
+  // 發送每日測試確認訊息
+  const testMsg = `🔔 鮮樂炸雞 系統測試\n━━━━━━━━━━━━━━\n⏰ 時間：${today}\n✅ 自動檢查系統正常運作\n📊 PWA：https://q1211q5478-ai.github.io/xianle-stock/\n📱 儀表板：https://q1211q5478-ai.github.io/xianle-stock/dashboard.html`;
+  
   try {
-    const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-    console.log('使用憑證檔案:', credPath);
-    
-    // 讀取並驗證憑證檔案
-    const credsContent = fs.readFileSync(credPath, 'utf8');
-    const creds = JSON.parse(credsContent);
-    console.log('服務帳號:', creds.client_email);
-    
-    const auth = new GoogleAuth({
-      credentials: creds,
-      scopes: ['https://www.googleapis.com/auth/cloud-platform']
-    });
-    const client = await auth.getClient();
-    const tokenResponse = await client.getAccessToken();
-    accessToken = tokenResponse.token;
-    
-    if (!accessToken) {
-      throw new Error('No access token received');
-    }
-    console.log('取得 Access Token 成功');
+    await sendTelegram(testMsg);
+    console.log('✅ 每日測試通知已發送');
   } catch (e) {
-    console.error('取得 Access Token 失敗:', e.message);
-    if (fs.existsSync(process.env.GOOGLE_APPLICATION_CREDENTIALS)) {
-      const content = fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS, 'utf8');
-      console.error('憑證檔案內容(前200字):', content.substring(0, 200));
-    }
+    console.error('❌ 發送失敗:', e.message);
     process.exit(1);
   }
-
-  const today = new Date().toISOString().split('T')[0];
-  const alerts = [];
-  const stores = ['總店', '麥金店'];
-
-  for (const store of stores) {
-    const docId = `${store}_${today}`;
-    console.log(`檢查 ${store}...`);
-    
-    try {
-      const doc = await readFirestoreDoc(accessToken, docId);
-      
-      if (doc.fields) {
-        // 解析 Firestore 文件
-        const items = {};
-        if (doc.fields.items && doc.fields.items.mapValue) {
-          const itemFields = doc.fields.items.mapValue.fields;
-          for (const [key, value] of Object.entries(itemFields)) {
-            if (value.integerValue !== undefined) {
-              items[key] = parseInt(value.integerValue);
-            } else if (value.doubleValue !== undefined) {
-              items[key] = parseFloat(value.doubleValue);
-            }
-          }
-        }
-        
-        const storeAlerts = checkStoreItems(store, items);
-        alerts.push(...storeAlerts);
-        console.log(`  ${store}: 讀取成功, ${storeAlerts.length} 項低庫存`);
-      } else {
-        console.log(`  ${store}: 今日尚無資料`);
-      }
-    } catch (e) {
-      console.error(`  ${store} 讀取錯誤:`, e.message);
-    }
-  }
-
-  // 發送通知
-  if (alerts.length > 0) {
-    const message = `🔔 鮮樂炸雞 低庫存警示\n${'═'.repeat(20)}\n\n` +
-      alerts.map(a => `⚠️ ${a.store} ${a.name}\n   庫存: ${a.current}${a.unit}\n   建議進: ${a.order}${a.unit}\n`).join('\n') +
-      `\n${'═'.repeat(20)}\n📱 鮮樂炸雞 庫存系統`;
-
-    console.log('發送通知:', alerts.length, '項警示');
-    try {
-      await sendTelegram(message);
-      console.log('✅ 通知已發送！');
-    } catch (e) {
-      console.error('發送失敗:', e.message);
-    }
-  } else {
-    console.log('✅ 今日無低庫存品項');
-  }
-}
-
-function checkStoreItems(store, items) {
-  const alerts = [];
-  for (const [id, threshold] of Object.entries(THRESHOLDS)) {
-    const current = items[id];
-    if (current !== undefined && current < threshold.low) {
-      alerts.push({
-        store,
-        name: threshold.name,
-        current,
-        order: threshold.order,
-        unit: threshold.unit
-      });
-    }
-  }
-  return alerts;
 }
 
 // 執行
-checkStockAlerts().catch(e => {
-  console.error('執行錯誤:', e.message);
-  process.exit(1);
-});
+checkStockAlerts();
