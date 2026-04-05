@@ -2,11 +2,12 @@
 // 使用 Firebase REST API 讀取 Firestore，發送 Telegram 通知
 
 const https = require('https');
+const fs = require('fs');
+const { GoogleAuth } = require('google-auth-library');
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'xianle-stock';
-const FIREBASE_SERVICE_ACCOUNT = process.env.FIREBASE_SERVICE_ACCOUNT;
 
 const THRESHOLDS = {
   D001: { name: '雞腿', low: 10, order: 30, unit: '盒' },
@@ -34,84 +35,6 @@ const THRESHOLDS = {
   W008: { name: '花枝天婦羅', low: 5, order: 20, unit: '包' },
 };
 
-// 取得 Firebase Access Token
-function getAccessToken() {
-  return new Promise((resolve, reject) => {
-    if (!FIREBASE_SERVICE_ACCOUNT) {
-      reject(new Error('Missing FIREBASE_SERVICE_ACCOUNT'));
-      return;
-    }
-
-    const creds = JSON.parse(FIREBASE_SERVICE_ACCOUNT);
-    const jwt = createJWT(creds);
-    
-    const data = JSON.stringify({
-      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-      assertion: jwt
-    });
-
-    const options = {
-      hostname: 'oauth2.googleapis.com',
-      path: '/token',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(data)
-      }
-    };
-
-    const req = https.request(options, (res) => {
-      let body = '';
-      res.on('data', chunk => body += chunk);
-      res.on('end', () => {
-        try {
-          const result = JSON.parse(body);
-          if (result.access_token) {
-            resolve(result.access_token);
-          } else {
-            reject(new Error('No access token: ' + body));
-          }
-        } catch (e) {
-          reject(e);
-        }
-      });
-    });
-    req.on('error', reject);
-    req.write(data);
-    req.end();
-  });
-}
-
-// 建立 JWT token
-function createJWT(creds) {
-  const crypto = require('crypto');
-  
-  const now = Math.floor(Date.now() / 1000);
-  const expiry = now + 3600;
-  
-  const header = { alg: 'RS256', typ: 'JWT' };
-  const payload = {
-    iss: creds.client_email,
-    sub: creds.client_email,
-    aud: 'https://oauth2.googleapis.com/token',
-    iat: now,
-    exp: expiry,
-    scope: 'https://www.googleapis.com/auth/cloud-platform'
-  };
-
-  const base64Header = Buffer.from(JSON.stringify(header)).toString('base64url');
-  const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64url');
-  
-  const signingInput = `${base64Header}.${base64Payload}`;
-  const signer = crypto.createSign('RSA-SHA256');
-  signer.update(signingInput);
-  
-  const privateKey = creds.private_key.replace(/\\n/g, '\n');
-  const signature = signer.sign(privateKey, 'base64url');
-  
-  return `${signingInput}.${signature}`;
-}
-
 // 發送 Telegram 訊息
 function sendTelegram(message) {
   return new Promise((resolve, reject) => {
@@ -131,9 +54,7 @@ function sendTelegram(message) {
 async function readFirestoreDoc(accessToken, docPath) {
   return new Promise((resolve, reject) => {
     const projectId = FIREBASE_PROJECT_ID;
-    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${docPath}?key=${accessToken}`;
     
-    // 注意：使用 API key 或 access token
     const options = {
       hostname: 'firestore.googleapis.com',
       path: `/v1/projects/${projectId}/databases/(default)/documents/${docPath}`,
@@ -164,9 +85,21 @@ async function checkStockAlerts() {
   console.log('開始檢查庫存...');
   console.log('TIME:', new Date().toISOString());
 
+  // 使用 Google Auth Library 取得 access token
   let accessToken;
   try {
-    accessToken = await getAccessToken();
+    const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    const auth = new GoogleAuth({
+      keyFile: credPath,
+      scopes: ['https://www.googleapis.com/auth/cloud-platform']
+    });
+    const client = await auth.getClient();
+    const tokenResponse = await client.getAccessToken();
+    accessToken = tokenResponse.token;
+    
+    if (!accessToken) {
+      throw new Error('No access token received');
+    }
     console.log('取得 Access Token 成功');
   } catch (e) {
     console.error('取得 Access Token 失敗:', e.message);
