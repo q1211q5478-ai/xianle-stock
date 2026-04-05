@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🍗 鮮樂炸雞 - 老闆視角</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #fff;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .header {
+      text-align: center;
+      padding: 20px 0;
+      border-bottom: 1px solid #333;
+      margin-bottom: 20px;
+    }
+    .header h1 { font-size: 24px; color: #FF8C00; }
+    .header p { font-size: 12px; color: #888; margin-top: 4px; }
+
+    .stores {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .store-btn {
+      flex: 1;
+      padding: 16px;
+      background: #16213e;
+      border: 2px solid #333;
+      border-radius: 12px;
+      color: #888;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .store-btn.active {
+      border-color: #FF8C00;
+      color: #FF8C00;
+      background: #1a1a2e;
+    }
+
+    .date-nav {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .date-nav button {
+      padding: 10px 16px;
+      background: #16213e;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+    }
+    .date-nav span {
+      flex: 1;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .summary .card {
+      background: #16213e;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    .summary .card .val { font-size: 28px; font-weight: 700; color: #FF8C00; }
+    .summary .card .lab { font-size: 11px; color: #888; margin-top: 4px; }
+
+    .section-title {
+      font-size: 12px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      padding-left: 4px;
+    }
+
+    .stock-list {
+      background: #16213e;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .stock-item {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid #333;
+    }
+    .stock-item:last-child { border-bottom: none; }
+    .stock-item .name { flex: 1; }
+    .stock-item .name .cn { font-size: 15px; font-weight: 600; }
+    .stock-item .name .vi { font-size: 11px; color: #666; }
+    .stock-item .stock {
+      font-size: 20px;
+      font-weight: 700;
+      min-width: 60px;
+      text-align: right;
+    }
+    .stock-item .stock.low { color: #ff4444; }
+    .stock-item .stock.ok { color: #4CAF50; }
+    .stock-item .unit { font-size: 12px; color: #888; margin-left: 4px; }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #888;
+    }
+
+    .alert-box {
+      background: #2d1f1f;
+      border: 1px solid #ff4444;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .alert-box h3 { color: #ff4444; font-size: 14px; margin-bottom: 8px; }
+    .alert-box .item { padding: 6px 0; font-size: 13px; color: #f88; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🍗 鮮樂炸雞 - 老闆視角</h1>
+  <p id="update-time">載入中...</p>
+</div>
+
+<div class="stores">
+  <button class="store-btn active" onclick="selectStore('總店')">🏠 總店</button>
+  <button class="store-btn" onclick="selectStore('麥金店')">🏪 麥金店</button>
+</div>
+
+<div class="date-nav">
+  <button onclick="changeDate(-1)">◀</button>
+  <span id="date-label">2026-04-05</span>
+  <button onclick="changeDate(1)">▶</button>
+</div>
+
+<div id="alert-box" class="alert-box" style="display:none">
+  <h3>🔔 低庫存警示</h3>
+  <div id="alert-list"></div>
+</div>
+
+<div class="summary">
+  <div class="card">
+    <div class="val" id="total-items">-</div>
+    <div class="lab">品項數</div>
+  </div>
+  <div class="card">
+    <div class="val" id="low-stock-count">-</div>
+    <div class="lab">低庫存品項</div>
+  </div>
+  <div class="card">
+    <div class="val" id="last-update">-</div>
+    <div class="lab">最後更新</div>
+  </div>
+</div>
+
+<div class="section-title">📦 庫存明細</div>
+<div class="stock-list" id="stock-list">
+  <div class="loading">載入中...</div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAaHj8E5WWQrllzqZC7OvrYsybhnFbm1T4",
+    authDomain: "xianle-stock.firebaseapp.com",
+    projectId: "xianle-stock",
+    storageBucket: "xianle-stock.firebasestorage.app",
+    messagingSenderId: "1029082693636",
+    appId: "1:1029082693636:web:2c879df1c137b7a0433551"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const ITEMS = {
+    daily: [
+      { id: 'D001', cn: '雞腿', vi: 'Đùi gà', unit: '盒', low: 10, order: 30 },
+      { id: 'D002', cn: '雞翅', vi: 'Cánh gà', unit: '盒', low: 8, order: 25 },
+      { id: 'D003', cn: '雞塊', vi: 'Khối gà', unit: '盒', low: 10, order: 30 },
+      { id: 'D004', cn: '鹹酥雞', vi: 'Gà muối', unit: '包', low: 10, order: 30 },
+      { id: 'D005', cn: '薯條', vi: 'Khoai tây', unit: '包', low: 5, order: 20 },
+      { id: 'D006', cn: '地瓜', vi: 'Khoai lang', unit: '包', low: 5, order: 20 },
+      { id: 'D007', cn: '銀絲捲', vi: 'Cuộn bạc', unit: '包', low: 5, order: 20 },
+      { id: 'D008', cn: '甜不辣', vi: 'Tempura', unit: '包', low: 5, order: 20 },
+      { id: 'D009', cn: '天婦羅', vi: 'Tempura Nhật', unit: '包', low: 5, order: 20 },
+      { id: 'D010', cn: '裹粉', vi: 'Bột tẩm', unit: '包', low: 5, order: 20 },
+      { id: 'D011', cn: '脆皮粉', vi: 'Bột giòn', unit: '包', low: 5, order: 20 },
+      { id: 'D012', cn: '胡椒粉', vi: 'Tiêu bột', unit: '罐', low: 3, order: 10 },
+      { id: 'D013', cn: '梅粉', vi: 'Bột mè', unit: '罐', low: 3, order: 10 },
+      { id: 'D014', cn: '回鍋油', vi: 'Dầu tái chế', unit: '公升', low: 5, order: 20 },
+      { id: 'D015', cn: '新油', vi: 'Dầu mới', unit: '公升', low: 10, order: 30 },
+    ],
+    weekly: [
+      { id: 'W001', cn: '魚漿', vi: 'Bột cá', unit: '公斤', low: 5, order: 15 },
+      { id: 'W002', cn: '天婦羅皮', vi: 'Vỏ tempura', unit: '包', low: 5, order: 20 },
+      { id: 'W003', cn: '甜不辣糊', vi: 'Bột tempura', unit: '公斤', low: 5, order: 15 },
+      { id: 'W004', cn: '包蛋黑輪', vi: 'Trứng bọc', unit: '條', low: 10, order: 30 },
+      { id: 'W005', cn: '牛蒡天婦羅', vi: 'Tempura củ cải', unit: '包', low: 5, order: 20 },
+      { id: 'W006', cn: '小卷天婦羅', vi: 'Tempura mực', unit: '包', low: 5, order: 20 },
+      { id: 'W007', cn: '魷魚天婦羅', vi: 'Tempura mực ống', unit: '包', low: 5, order: 20 },
+      { id: 'W008', cn: '花枝天婦羅', vi: 'Tempura bạch văn', unit: '包', low: 5, order: 20 },
+    ]
+  };
+
+  let currentStore = '總店';
+  let currentDate = new Date().toISOString().split('T')[0];
+  let allItems = [...ITEMS.daily, ...ITEMS.weekly];
+
+  window.selectStore = function(store) {
+    currentStore = store;
+    document.querySelectorAll('.store-btn').forEach(b => b.classList.toggle('active', b.textContent.includes(store)));
+    loadData();
+  };
+
+  window.changeDate = function(delta) {
+    const d = new Date(currentDate);
+    d.setDate(d.getDate() + delta);
+    currentDate = d.toISOString().split('T')[0];
+    document.getElementById('date-label').textContent = currentDate;
+    loadData();
+  };
+
+  async function loadData() {
+    const docId = `${currentStore}_${currentDate}`;
+    const docRef = doc(db, 'stock', docId);
+    const listEl = document.getElementById('stock-list');
+
+    listEl.innerHTML = '<div class="loading">載入中...</div>';
+
+    try {
+      const snapshot = await getDoc(docRef);
+      const items = snapshot.exists() ? (snapshot.data().items || {}) : {};
+      renderStock(items);
+    } catch (e) {
+      listEl.innerHTML = '<div class="loading">載入失敗: ' + e.message + '</div>';
+    }
+  }
+
+  function renderStock(items) {
+    const listEl = document.getElementById('stock-list');
+    const alertList = [];
+    let lowCount = 0;
+
+    let html = allItems.map(item => {
+      const val = items[item.id] !== undefined ? items[item.id] : '-';
+      const isLow = val !== '-' && val < item.low;
+      if (isLow) {
+        lowCount++;
+        alertList.push({ name: item.cn, current: val, need: item.order, unit: item.unit });
+      }
+      const cls = val === '-' ? '' : (isLow ? 'low' : 'ok');
+      return `
+        <div class="stock-item">
+          <div class="name"><div class="cn">${item.cn}</div><div class="vi">${item.vi}</div></div>
+          <div class="stock ${cls}">${val}</div>
+          <div class="unit">${item.unit}</div>
+        </div>
+      `;
+    }).join('');
+
+    listEl.innerHTML = html;
+
+    // Update summary
+    document.getElementById('total-items').textContent = allItems.length;
+    document.getElementById('low-stock-count').textContent = lowCount;
+    document.getElementById('last-update').textContent = currentStore;
+
+    // Alert box
+    const alertBox = document.getElementById('alert-box');
+    const alertListEl = document.getElementById('alert-list');
+    if (alertList.length > 0) {
+      alertBox.style.display = 'block';
+      alertListEl.innerHTML = alertList.map(a =>
+        `<div class="item">⚠️ ${a.name}：${a.current}${a.unit}（建議進 ${a.need}${a.unit}）</div>`
+      ).join('');
+    } else {
+      alertBox.style.display = 'none';
+    }
+
+    document.getElementById('update-time').textContent = `📅 ${currentDate} | ${currentStore}`;
+  }
+
+  // Init
+  document.getElementById('date-label').textContent = currentDate;
+  loadData();
+</script>
+</body>
+</html>
