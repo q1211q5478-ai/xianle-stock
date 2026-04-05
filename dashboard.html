@@ -253,14 +253,25 @@
       const data = snapshot.data() || {};
       const items = {};
       
-      // 直接遍歷所有 key
-      for (const [key, value] of Object.entries(data)) {
-        if (key.startsWith('items.')) {
-          const itemId = key.replace('items.', '');
+      // 直接檢查 items 物件（Firebase SDK 已經幫我們解析）
+      if (data.items && typeof data.items === 'object') {
+        for (const [key, value] of Object.entries(data.items)) {
           if (typeof value === 'number') {
-            items[itemId] = value;
+            items[key] = value;
           } else if (value && (value.integerValue !== undefined || value.doubleValue !== undefined)) {
-            items[itemId] = value.integerValue !== undefined ? parseInt(value.integerValue, 10) : parseFloat(value.doubleValue, 10);
+            items[key] = value.integerValue !== undefined ? parseInt(value.integerValue, 10) : parseFloat(value.doubleValue, 10);
+          }
+        }
+      } else {
+        // 備援：遍歷所有 key
+        for (const [key, value] of Object.entries(data)) {
+          if (key.startsWith('items.')) {
+            const itemId = key.replace('items.', '');
+            if (typeof value === 'number') {
+              items[itemId] = value;
+            } else if (value && (value.integerValue !== undefined || value.doubleValue !== undefined)) {
+              items[itemId] = value.integerValue !== undefined ? parseInt(value.integerValue, 10) : parseFloat(value.doubleValue, 10);
+            }
           }
         }
       }
