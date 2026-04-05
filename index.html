@@ -812,6 +812,10 @@
     const val = document.getElementById('modal-input').value;
     const n = parseFloat(val);
     const btn = document.getElementById('modal-submit');
+    if (!currentItem) {
+      showToast('❌ 系統錯誤，請重新開啟視窗', 'error');
+      return;
+    }
     if (val === '' || isNaN(n) || n < 0) {
       showToast('❌ 請輸入有效的數量', 'error');
       return;
