@@ -1,0 +1,30 @@
+name: Stock Alert Check
+
+on:
+  schedule:
+    # 每天早上 9 點檢查 (台灣時間)
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-alerts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install dependencies
+        run: npm install firebase-admin telegram
+      
+      - name: Run alert check
+        env:
+          FIREBASE_PROJECT_ID: xianle-stock
+          FIREBASE_CLIENT_EMAIL: firebase-adminsdk@xianle-stock.iam.gserviceaccount.com
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: node check-stock-alert.js
