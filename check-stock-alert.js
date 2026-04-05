@@ -2,9 +2,11 @@
 // 每天定時檢查庫存，低於設定時發送 Telegram 通知
 
 const https = require('https');
+const { initializeApp } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
 
-const TELEGRAM_BOT_TOKEN = '8650605122:AAEoPf9Omf5_sLk1B_jSkF01SW6GJPPZr6Y';
-const TELEGRAM_CHAT_ID = '8614627016';
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
 const THRESHOLDS = {
   D001: { name: '雞腿', low: 10, order: 30, unit: '盒' },
@@ -47,57 +49,45 @@ function sendTelegram(message) {
 }
 
 async function checkStockAlerts() {
-  // 動態 import firebase-admin（只在 GitHub Actions 環境用）
-  let db;
-  try {
-    const { initializeApp, cert } = require('firebase-admin/app');
-    const { getFirestore } = require('firebase-admin/firestore');
-    
-    initializeApp({
-      credential: cert({
-        type: 'service_account',
-        project_id: process.env.FIREBASE_PROJECT_ID,
-        private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        client_email: process.env.FIREBASE_CLIENT_EMAIL,
-      })
-    });
-    db = getFirestore();
-  } catch (e) {
-    console.log('Firebase Admin not available, using mock mode');
-  }
+  console.log('開始檢查庫存...');
+
+  // 使用 Application Default Credentials (由 google-github-actions/auth 設定)
+  initializeApp();
+  const db = getFirestore();
 
   const today = new Date().toISOString().split('T')[0];
   const alerts = [];
-
   const stores = ['總店', '麥金店'];
 
   for (const store of stores) {
     const docId = `${store}_${today}`;
+    console.log(`檢查 ${store}...`);
     
-    if (db) {
-      try {
-        const doc = await db.collection('stock').doc(docId).get();
-        if (doc.exists) {
-          const items = doc.data().items || {};
-          checkStoreItems(store, items, alerts);
-        }
-      } catch (e) {
-        console.error(`Error reading ${store}:`, e.message);
+    try {
+      const doc = await db.collection('stock').doc(docId).get();
+      if (doc.exists) {
+        const items = doc.data().items || {};
+        checkStoreItems(store, items, alerts);
+        console.log(`  ${store}: 讀取成功`);
+      } else {
+        console.log(`  ${store}: 今日尚無資料`);
       }
+    } catch (e) {
+      console.error(`  ${store} 讀取錯誤:`, e.message);
     }
   }
 
   // 發送通知
   if (alerts.length > 0) {
-    const message = `🔔 鮮樂炸雞 低庫存警示\n${'='.repeat(20)}\n\n` +
+    const message = `🔔 鮮樂炸雞 低庫存警示\n${'═'.repeat(20)}\n\n` +
       alerts.map(a => `⚠️ ${a.store} ${a.name}\n   庫存: ${a.current}${a.unit}\n   建議進: ${a.order}${a.unit}\n`).join('\n') +
-      `\n${'='.repeat(20)}\n📱 鮮樂炸雞 庫存系統`;
+      `\n${'═'.repeat(20)}\n📱 鮮樂炸雞 庫存系統`;
 
-    console.log('Sending alert:', message);
+    console.log('發送通知:', alerts.length, '項警示');
     await sendTelegram(message);
-    console.log('Alert sent!');
+    console.log('✅ 通知已發送！');
   } else {
-    console.log('No alerts today');
+    console.log('✅ 今日無低庫存品項');
   }
 }
 
@@ -116,29 +106,8 @@ function checkStoreItems(store, items, alerts) {
   }
 }
 
-// 模擬模式測試
-async function mockMode() {
-  console.log('Running mock alert check...');
-  const mockItems = {
-    D001: 5,  // 雞腿低於10
-    D005: 2,  // 薯條低於5
-    W001: 3,  // 魚蹟低於5
-  };
-  const alerts = [];
-  checkStoreItems('總店', mockItems, alerts);
-  if (alerts.length > 0) {
-    console.log('Alerts found:', alerts);
-  } else {
-    console.log('No alerts');
-  }
-}
-
 // 執行
-const args = process.argv.slice(2);
-if (args.includes('--mock')) {
-  mockMode();
-} else {
-  checkStockAlerts().catch(console.error);
-}
-
-module.exports = { checkStockAlerts, checkStoreItems };
+checkStockAlerts().catch(e => {
+  console.error('執行錯誤:', e.message);
+  process.exit(1);
+});

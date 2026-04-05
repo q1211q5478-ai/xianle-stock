@@ -19,12 +19,14 @@ jobs:
           
       - name: Install dependencies
         run: npm install firebase-admin telegram
-      
+
+      - name: Authenticate to Firebase
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          
       - name: Run alert check
         env:
-          FIREBASE_PROJECT_ID: xianle-stock
-          FIREBASE_CLIENT_EMAIL: firebase-adminsdk@xianle-stock.iam.gserviceaccount.com
-          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: node check-stock-alert.js
