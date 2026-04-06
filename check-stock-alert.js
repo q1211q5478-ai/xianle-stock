@@ -114,15 +114,19 @@ function parseFirestoreDoc(doc) {
 
 // ========== 主程式 ==========
 async function checkStockAlerts() {
-  const today = new Date().toISOString().split('T')[0];
-  const todayDisplay = new Date().toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
-  console.log(`📅 ${today} 庫存檢查`);
+  // 改為檢查「昨天」的資料（員工關店後填的庫存）
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  const checkDate = yesterday.toISOString().split('T')[0];
+  const checkDateDisplay = yesterday.toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
+  console.log(`📅 ${checkDate} 庫存檢查（昨日關店資料）`);
   
   const reorderList = [];
   const stores = ['總店', '麥金店'];
 
   for (const store of stores) {
-    const fullDocId = `${store}_${today}`;
+    const fullDocId = `${store}_${checkDate}`;
     console.log(`\n檢查 ${store}...`);
     
     try {
@@ -174,7 +178,7 @@ async function checkStockAlerts() {
     
     let message = `📦 鮮樂炸雞 進貨建議\n`;
     message += `${'━'.repeat(24)}\n`;
-    message += `📅 ${todayDisplay}\n`;
+    message += `📅 ${checkDateDisplay}（昨日關店資料）\n`;
     message += `📊 公式：(日均用量 × ${REORDER_DAYS}天) − 今日現貨\n\n`;
     
     for (const [store, items] of Object.entries(byStore)) {
