@@ -99,16 +99,38 @@ function readFirestoreDoc(docPath) {
 // ========== 解析 Firestore 文件 ==========
 function parseFirestoreDoc(doc) {
   const items = {};
-  if (doc.fields && doc.fields.items && doc.fields.items.mapValue) {
+  if (!doc.fields) return items;
+  
+  // 格式一：items.mapValue（巢狀物件格式）
+  if (doc.fields.items && doc.fields.items.mapValue) {
     const itemFields = doc.fields.items.mapValue.fields;
     for (const [key, value] of Object.entries(itemFields)) {
       if (value.integerValue !== undefined) {
         items[key] = parseInt(value.integerValue, 10);
       } else if (value.doubleValue !== undefined) {
         items[key] = parseFloat(value.doubleValue);
+      } else if (value.stringValue !== undefined) {
+        items[key] = parseFloat(value.stringValue);
       }
     }
   }
+  
+  // 格式二：items.D001, items.D002...（扁平格式）
+  for (const [key, value] of Object.entries(doc.fields)) {
+    if (key.startsWith('items.')) {
+      const itemId = key.replace('items.', '');
+      if (!items[itemId]) {
+        if (value.integerValue !== undefined) {
+          items[itemId] = parseInt(value.integerValue, 10);
+        } else if (value.doubleValue !== undefined) {
+          items[itemId] = parseFloat(value.doubleValue);
+        } else if (value.stringValue !== undefined) {
+          items[itemId] = parseFloat(value.stringValue);
+        }
+      }
+    }
+  }
+  
   return items;
 }
 
