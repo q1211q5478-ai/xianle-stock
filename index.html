@@ -794,6 +794,11 @@
   window.openModal = function(itemId) {
     const allItems = [...ITEMS.daily, ...ITEMS.weekly];
     currentItem = allItems.find(i => i.id === itemId);
+    if (!currentItem) {
+      showToast('❌ 品項不存在，請重新整理頁面', 'error');
+      console.error('openModal: item not found', itemId, 'available ids:', allItems.map(i=>i.id));
+      return;
+    }
     document.getElementById('modal-title').textContent = currentItem.cn;
     document.getElementById('modal-sub').textContent = currentItem.vi;
     document.getElementById('modal-unit').textContent = currentItem.unit;
