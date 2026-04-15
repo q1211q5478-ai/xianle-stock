@@ -834,8 +834,10 @@
         updatedAt: serverTimestamp(),
         store: currentStore, date: today
       }, { merge: true });
+      const itemName = currentItem.cn;
+      const itemUnit = currentItem.unit;
       closeModal();
-      showToast(`✅ 已更新：${currentItem.cn} = ${n} ${currentItem.unit}`, 'success');
+      showToast(`✅ 已更新：${itemName} = ${n} ${itemUnit}`, 'success');
     } catch (e) {
       console.error(e);
       showToast(`❌ 更新失敗：${e.message}`, 'error');
