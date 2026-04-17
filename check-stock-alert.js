@@ -66,10 +66,31 @@ const FIREBASE_PROJECT_ID = 'xianle-stock';
 const FIREBASE_API_KEY = 'AIzaSyAaHj8E5WWQrllzqZC7OvrYsybhnFbm1T4';
 const COLLECTION_NAME = 'stock';
 
-// ========== 發送 Telegram ==========
+// ========== 發送 Telegram（純文字）==========
 function sendTelegram(message) {
   return new Promise((resolve, reject) => {
     const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${encodeURIComponent(message)}`;
+    https.get(url, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try { resolve(JSON.parse(data)); }
+        catch (e) { resolve(data); }
+      });
+    }).on('error', reject);
+  });
+}
+
+// ========== 發送 Telegram（帶按鈕）==========
+function sendTelegramWithButtons(message, inlineKeyboard) {
+  return new Promise((resolve, reject) => {
+    const params = new URLSearchParams({
+      chat_id: TELEGRAM_CHAT_ID,
+      text: message,
+      reply_markup: JSON.stringify({ inline_keyboard: inlineKeyboard }),
+      parse_mode: 'HTML'
+    });
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?${params.toString()}`;
     https.get(url, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
@@ -170,12 +191,12 @@ async function checkStockAlerts() {
               reorderList.push({
                 store,
                 id,
-                name: itemInfo.name,
+                name: itemInfo?.name || id,  // 查不到就用 ID
                 current: currentQty,
-                avgDaily: itemInfo.avg,
+                avgDaily: itemInfo?.avg || null,  // 查不到就顯示 null
                 target: targetStock,
                 order: suggestedOrder,
-                unit: itemInfo.unit
+                unit: itemInfo?.unit || ''
               });
             }
           }
@@ -198,28 +219,38 @@ async function checkStockAlerts() {
       byStore[item.store].push(item);
     }
     
-    let message = `📦 鮮樂炸雞 進貨建議\n`;
-    message += `${'━'.repeat(24)}\n`;
+    // 建立按鈕（每個品項一行，每行三個快速按鈕）
+    const buttons = [];
+    for (const item of reorderList) {
+      buttons.push([
+        { text: `🛒 ${item.name} ＋5`, callback_data: `restock:${item.store}:${item.id}:5` },
+        { text: `＋10`, callback_data: `restock:${item.store}:${item.id}:10` },
+        { text: `＋20`, callback_data: `restock:${item.store}:${item.id}:20` }
+      ]);
+    }
+    buttons.push([{ text: '📊 查看完整庫存儀表板', url: 'https://q1211q5478-ai.github.io/xianle-stock/dashboard.html' }]);
+    
+    let message = `<b>📦 鮮樂炸雞 進貨建議</b>\n`;
+    message += `${'─'.repeat(24)}\n`;
     message += `📅 ${checkDateDisplay}（昨日關店資料）\n`;
     message += `📊 公式：(日均用量 × ${REORDER_DAYS}天) − 今日現貨\n\n`;
     
-    for (const [store, items] of Object.entries(byStore)) {
-      message += `🏪 ${store}\n`;
-      for (const item of items) {
+    for (const [store, storeItems] of Object.entries(byStore)) {
+      message += `<b>🏪 ${store}</b>\n`;
+      for (const item of storeItems) {
         message += `🛒 ${item.name}\n`;
-        message += `   今日現貨: ${item.current}${item.unit}\n`;
-        message += `   日均用量: ${item.avg}${item.unit}\n`;
-        message += `   目標備量: ${item.target}${item.unit}\n`;
-        message += `   ✅ 建議進貨: ${item.order}${item.unit}\n\n`;
+        message += `   現貨: ${item.current}${item.unit}`;
+        message += item.avgDaily !== null ? `  日均: ${item.avgDaily}${item.unit}` : '';
+        message += `  建議進貨: <b>+${item.order}${item.unit}</b>\n\n`;
       }
     }
-    
-    message += `${'━'.repeat(24)}\n`;
+    message += `${'─'.repeat(24)}\n`;
+    message += `💡 點選下方按鈕快速回報補貨\n`;
     message += `🔗 https://q1211q5478-ai.github.io/xianle-stock/dashboard.html`;
     
     try {
-      await sendTelegram(message);
-      console.log('✅ 進貨建議已發送到 Telegram');
+      await sendTelegramWithButtons(message, buttons);
+      console.log('✅ 進貨建議已發送到 Telegram（帶按鈕）');
     } catch (e) {
       console.error('❌ 發送失敗:', e.message);
     }
