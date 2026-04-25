@@ -188,6 +188,22 @@
       padding: 10px 0;
     }
 
+    /* Trend Section */
+    .trend-section {
+      margin-bottom: 20px;
+    }
+    .trend-section .section-title.trend {
+      background: rgba(100, 100, 255, 0.15);
+      color: #8888ff;
+    }
+    .chart-container {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
     /* Section Title */
     .section-head {
       display: flex;
@@ -370,6 +386,16 @@
   <div id="alert-list"></div>
 </div>
 
+<!-- Trend Chart Section -->
+<div class="trend-section" id="trend-section" style="display:none;">
+  <div class="section-head">
+    <div class="section-title trend">📈 趨勢分析（7天）</div>
+  </div>
+  <div class="chart-container">
+    <canvas id="trendChart" height="200"></canvas>
+  </div>
+</div>
+
 <!-- Content -->
 <div id="content">
   <div class="loading">載入中...</div>
@@ -378,9 +404,12 @@
 <div id="debug"></div>
 
 <!-- Firebase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const Chart = window.Chart;
 
   const firebaseConfig = {
     apiKey: "AIzaSyAaHj8E5WWQrllzqZC7OvrYsybhnFbm1T4",
@@ -451,6 +480,8 @@
 
   let currentStore = '總店';
   let currentDate = new Date().toISOString().split('T')[0];
+  let trendChart = null;
+  let historicalData = {};
 
   // Set date label
   function fmtDate(d) {
@@ -556,10 +587,118 @@
       }
 
       renderContent(items);
+
+      // 載入歷史資料並繪製趨勢圖
+      loadHistoricalData(currentStore).catch(e => console.log('History load failed:', e));
     } catch (e) {
       debugEl.textContent = '錯誤: ' + e.message;
       contentEl.innerHTML = '<div class="no-data">❌ 載入失敗：' + e.message + '</div>';
     }
+  }
+
+  // 讀取歷史資料
+  async function loadHistoricalData(store) {
+    try {
+      const historyRef = collection(db, 'stock_history');
+      const q = query(historyRef, orderBy('date', 'desc'), limit(7));
+      const snapshot = await getDocs(q);
+
+      historicalData = {};
+      const dates = [];
+
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        const date = data.date;
+        if (!dates.includes(date)) dates.push(date);
+        if (!historicalData[store]) historicalData[store] = {};
+        if (!historicalData[store][date]) historicalData[store][date] = {};
+
+        const items = {};
+        if (data.items && data.items.mapValue) {
+          for (const [k, v] of Object.entries(data.items.mapValue.fields || {})) {
+            items[k] = typeof v === 'number' ? v
+              : (v?.integerValue !== undefined ? parseInt(v.integerValue) : v?.doubleValue !== undefined ? parseFloat(v.doubleValue) : 0);
+          }
+        }
+        historicalData[store][date] = items;
+      });
+
+      dates.sort();
+      if (dates.length < 2) {
+        document.getElementById('trend-section').style.display = 'none';
+        return;
+      }
+
+      // 選擇需要補貨的品項顯示在圖表上
+      const allItems = [...ITEMS.daily, ...ITEMS.weekly];
+      const alertIds = allItems
+        .filter(i => {
+          const s = items[i.id];
+          return s !== undefined && s <= i.low * 1.5;
+        })
+        .map(i => i.id)
+        .slice(0, 5);
+
+      if (alertIds.length === 0) {
+        document.getElementById('trend-section').style.display = 'none';
+        return;
+      }
+
+      renderTrendChart(store, dates, alertIds);
+    } catch (e) {
+      console.log('History load error:', e);
+      document.getElementById('trend-section').style.display = 'none';
+    }
+  }
+
+  // 繪製趨勢圖
+  function renderTrendChart(store, dates, itemIds) {
+    const trendSection = document.getElementById('trend-section');
+    trendSection.style.display = 'block';
+
+    const allItems = [...ITEMS.daily, ...ITEMS.weekly];
+    const itemMap = {};
+    allItems.forEach(i => itemMap[i.id] = i);
+
+    const datasets = itemIds.map((id, idx) => {
+      const item = itemMap[id];
+      const color = ['#FF8C00', '#00C853', '#FF1744', '#8888ff', '#FF9100'][idx % 5];
+      const data = dates.map(date => {
+        const dayItems = historicalData[store]?.[date] || {};
+        return dayItems[id] ?? null;
+      });
+
+      return {
+        label: item.cn,
+        data: data,
+        borderColor: color,
+        backgroundColor: color + '33',
+        tension: 0.3,
+        fill: false,
+        pointRadius: 4
+      };
+    });
+
+    const ctx = document.getElementById('trendChart').getContext('2d');
+
+    if (trendChart) trendChart.destroy();
+
+    trendChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: dates.map(d => d.slice(5).replace('-', '/')),
+        datasets: datasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6B6B8D' } },
+          y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6B6B8D' }, beginAtZero: true }
+        }
+      }
+    });
   }
 
   function buildItemCard(item, stock) {
