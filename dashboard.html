@@ -470,13 +470,11 @@
 <div id="debug"></div>
 
 <!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-  // Chart.js CDN
-  import Chart from 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
-
+  // Firebase compat SDK（已透過全域 firebase 物件載入）
   const firebaseConfig = {
     apiKey: "AIzaSyAaHj8E5WWQrllzqZC7OvrYsybhnFbm1T4",
     authDomain: "xianle-stock.firebaseapp.com",
@@ -486,8 +484,8 @@
     appId: "1:1029082693636:web:2c879df1c137b7a0433551"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
   // ===== ITEMS（同步最新庫存表） =====
   const ITEMS = {
@@ -655,8 +653,8 @@
 
       renderContent(items);
 
-      // 載入歷史資料並繪製趨勢圖
-      loadHistoricalData(currentStore);
+      // 載入歷史資料並繪製趨勢圖（失敗不影響主流程）
+      loadHistoricalData(currentStore).catch(e => console.log('History load failed:', e));
     } catch (e) {
       debugEl.textContent = '錯誤: ' + e.message;
       contentEl.innerHTML = '<div class="no-data">❌ 載入失敗：' + e.message + '</div>';
