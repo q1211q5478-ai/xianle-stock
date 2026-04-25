@@ -319,87 +319,6 @@
       border-radius: 8px;
       display: none;
     }
-
-    /* Trend Section */
-    .trend-section {
-      margin-bottom: 20px;
-    }
-    .trend-section .section-title.trend {
-      background: rgba(100, 100, 255, 0.15);
-      color: #8888ff;
-    }
-    .chart-container {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 16px;
-      margin-bottom: 12px;
-    }
-    .chart-legend {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: center;
-    }
-    .chart-legend-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11px;
-      padding: 4px 10px;
-      background: var(--card);
-      border-radius: 20px;
-      border: 1px solid var(--border);
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .chart-legend-item:hover {
-      border-color: var(--orange);
-    }
-    .chart-legend-item .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-    }
-    .chart-legend-item .name {
-      color: var(--text);
-      max-width: 80px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    /* Trend badge on item cards */
-    .item-card .trend-badge {
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 6px;
-      margin-top: 4px;
-      display: inline-block;
-    }
-    .trend-badge.up {
-      background: var(--green-dim);
-      color: var(--green);
-    }
-    .trend-badge.down {
-      background: var(--red-dim);
-      color: var(--red);
-    }
-    .trend-badge.stable {
-      background: var(--border);
-      color: var(--text-sub);
-    }
-
-    /* Avg usage info */
-    .item-card .avg-info {
-      font-size: 10px;
-      color: var(--text-sub);
-      margin-top: 2px;
-    }
-    .item-card .avg-info span {
-      color: var(--orange);
-      font-weight: 600;
-    }
   </style>
 </head>
 <body>
@@ -451,17 +370,6 @@
   <div id="alert-list"></div>
 </div>
 
-<!-- Trend Chart Section -->
-<div class="trend-section" id="trend-section" style="display:none;">
-  <div class="section-head">
-    <div class="section-title trend">📈 趨勢分析（7天）</div>
-  </div>
-  <div class="chart-container">
-    <canvas id="trendChart" height="200"></canvas>
-  </div>
-  <div class="chart-legend" id="chart-legend"></div>
-</div>
-
 <!-- Content -->
 <div id="content">
   <div class="loading">載入中...</div>
@@ -470,11 +378,10 @@
 <div id="debug"></div>
 
 <!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script>
-  // Firebase compat SDK
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
   const firebaseConfig = {
     apiKey: "AIzaSyAaHj8E5WWQrllzqZC7OvrYsybhnFbm1T4",
     authDomain: "xianle-stock.firebaseapp.com",
@@ -484,8 +391,8 @@
     appId: "1:1029082693636:web:2c879df1c137b7a0433551"
   };
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
   // ===== ITEMS（同步最新庫存表） =====
   const ITEMS = {
@@ -544,9 +451,6 @@
 
   let currentStore = '總店';
   let currentDate = new Date().toISOString().split('T')[0];
-  let trendChart = null;
-  let historicalData = {};
-  let selectedTrendItems = [];
 
   // Set date label
   function fmtDate(d) {
@@ -652,177 +556,15 @@
       }
 
       renderContent(items);
-
-      // 載入歷史資料並繪製趨勢圖（失敗不影響主流程）
-      loadHistoricalData(currentStore).catch(e => console.log('History load failed:', e));
     } catch (e) {
       debugEl.textContent = '錯誤: ' + e.message;
       contentEl.innerHTML = '<div class="no-data">❌ 載入失敗：' + e.message + '</div>';
     }
   }
 
-  // 讀取歷史資料（stock_history collection）
-  async function loadHistoricalData(store) {
-    try {
-      const historyRef = collection(db, 'stock_history');
-      const q = query(
-        historyRef,
-        orderBy('date', 'desc'),
-        limit(7)
-      );
-      const snapshot = await getDocs(q);
-
-      historicalData = {};
-      const dates = [];
-
-      snapshot.docs.forEach(doc => {
-        const data = doc.data();
-        const date = data.date;
-        if (!dates.includes(date)) {
-          dates.push(date);
-        }
-        if (!historicalData[store]) {
-          historicalData[store] = {};
-        }
-        if (!historicalData[store][date]) {
-          historicalData[store][date] = {};
-        }
-
-        // 解析 items
-        const items = {};
-        if (data.items && data.items.mapValue) {
-          for (const [k, v] of Object.entries(data.items.mapValue.fields || {})) {
-            items[k] = typeof v === 'number' ? v
-              : (v?.integerValue !== undefined ? parseInt(v.integerValue) : v?.doubleValue !== undefined ? parseFloat(v.doubleValue) : 0);
-          }
-        }
-        historicalData[store][date] = items;
-      });
-
-      // 按日期排序（舊到新）
-      dates.sort();
-
-      // 預設選擇需要補貨的品項顯示在圖表上
-      const allItems = [...ITEMS.daily, ...ITEMS.weekly];
-      const docRef = doc(db, 'stock', `${store}_${currentDate}`);
-      const docSnap = await getDoc(docRef);
-      const currentItems = docSnap.exists() ? docSnap.data() : {};
-      const currentStock = {};
-      if (currentItems.items && currentItems.items.mapValue) {
-        for (const [k, v] of Object.entries(currentItems.items.mapValue.fields || {})) {
-          currentStock[k] = typeof v === 'number' ? v
-            : (v?.integerValue !== undefined ? parseInt(v.integerValue) : v?.doubleValue !== undefined ? parseFloat(v.doubleValue) : 0);
-        }
-      }
-
-      // 選擇需要補貨或即將耗盡的品項
-      const alertIds = allItems
-        .filter(i => {
-          const s = currentStock[i.id];
-          return s !== undefined && s <= i.low * 1.5;
-        })
-        .map(i => i.id)
-        .slice(0, 5);
-
-      selectedTrendItems = alertIds;
-
-      // 繪製圖表
-      renderTrendChart(store, dates, selectedTrendItems);
-
-    } catch (e) {
-      console.log('歷史資料載入失敗:', e.message);
-      document.getElementById('trend-section').style.display = 'none';
-    }
-  }
-
-  // 繪製趨勢圖
-  function renderTrendChart(store, dates, itemIds) {
-    const trendSection = document.getElementById('trend-section');
-    if (!dates.length || !itemIds.length) {
-      trendSection.style.display = 'none';
-      return;
-    }
-
-    trendSection.style.display = 'block';
-
-    const allItems = [...ITEMS.daily, ...ITEMS.weekly];
-    const itemMap = {};
-    allItems.forEach(i => itemMap[i.id] = i);
-
-    const datasets = itemIds.map((id, idx) => {
-      const item = itemMap[id];
-      const color = ['#FF8C00', '#00C853', '#FF1744', '#8888ff', '#FF9100'][idx % 5];
-      const data = dates.map(date => {
-        const items = historicalData[store]?.[date] || {};
-        return items[id] ?? null;
-      });
-
-      return {
-        label: item.cn,
-        data: data,
-        borderColor: color,
-        backgroundColor: color + '33',
-        tension: 0.3,
-        fill: false,
-        pointRadius: 4,
-        pointHoverRadius: 6
-      };
-    });
-
-    const ctx = document.getElementById('trendChart').getContext('2d');
-
-    if (trendChart) {
-      trendChart.destroy();
-    }
-
-    trendChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: dates.map(d => d.slice(5).replace('-', '/')),
-        datasets: datasets
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: ctx => `${ctx.dataset.label}: ${ctx.raw ?? '無資料'}`
-            }
-          }
-        },
-        scales: {
-          x: {
-            grid: { color: 'rgba(255,255,255,0.05)' },
-            ticks: { color: '#6B6B8D' }
-          },
-          y: {
-            grid: { color: 'rgba(255,255,255,0.05)' },
-            ticks: { color: '#6B6B8D' },
-            beginAtZero: true
-          }
-        }
-      }
-    });
-
-    // 圖例
-    const legendEl = document.getElementById('chart-legend');
-    legendEl.innerHTML = itemIds.map((id, idx) => {
-      const item = itemMap[id];
-      const color = ['#FF8C00', '#00C853', '#FF1744', '#8888ff', '#FF9100'][idx % 5];
-      return `<div class="chart-legend-item">
-        <div class="dot" style="background:${color}"></div>
-        <div class="name">${item.cn}</div>
-      </div>`;
-    }).join('');
-  }
-
-  function buildItemCard(item, stock, trend = null) {
+  function buildItemCard(item, stock) {
     const status = getStatus(item, stock);
     const badge = getBadgeText(status);
-    const trendBadge = trend === 'up' ? '<span class="trend-badge up">↑ 上升</span>' : trend === 'down' ? '<span class="trend-badge down">↓ 下降</span>' : trend === 'stable' ? '<span class="trend-badge stable">→ 穩定</span>' : '';
-
     return `
       <div class="item-card status-${status}">
         <div class="card-top">
@@ -838,8 +580,10 @@
             : `<div class="stock-num">—</div>`
           }
         </div>
-        ${stock !== undefined ? `<div class="low-info">低庫存警示：<span>${item.low}${item.unit}</span></div>` : ''}
-        ${trendBadge ? `<div class="trend-row">${trendBadge}</div>` : ''}
+        ${stock !== undefined
+          ? `<div class="low-info">低庫存警示：<span>${item.low}${item.unit}</span></div>`
+          : ''
+        }
       </div>
     `;
   }
@@ -849,37 +593,19 @@
     const dailyItems = ITEMS.daily.filter(i => items[i.id] !== undefined).length;
     const weeklyItems = ITEMS.weekly.filter(i => items[i.id] !== undefined).length;
 
-    // 計算每項的趨勢
-    const trends = {};
-    const dates = historicalData[currentStore] ? Object.keys(historicalData[currentStore]).sort() : [];
-    if (dates.length >= 2) {
-      const recentDates = dates.slice(-3); // 最近3天
-      [...ITEMS.daily, ...ITEMS.weekly].forEach(item => {
-        const values = recentDates.map(d => historicalData[currentStore][d]?.[item.id] ?? null).filter(v => v !== null);
-        if (values.length >= 2) {
-          const first = values[0];
-          const last = values[values.length - 1];
-          const diff = last - first;
-          if (diff > 1) trends[item.id] = 'up';
-          else if (diff < -1) trends[item.id] = 'down';
-          else trends[item.id] = 'stable';
-        }
-      });
-    }
-
     contentEl.innerHTML = `
       <div class="section-head">
         <div class="section-title daily">📅 每日品項 <span class="count">${dailyItems}/${ITEMS.daily.length}</span></div>
       </div>
       <div class="item-grid">
-        ${ITEMS.daily.map(item => buildItemCard(item, items[item.id], trends[item.id])).join('')}
+        ${ITEMS.daily.map(item => buildItemCard(item, items[item.id])).join('')}
       </div>
 
       <div class="section-head">
         <div class="section-title weekly">📦 每週品項 <span class="count">${weeklyItems}/${ITEMS.weekly.length}</span></div>
       </div>
       <div class="item-grid">
-        ${ITEMS.weekly.map(item => buildItemCard(item, items[item.id], trends[item.id])).join('')}
+        ${ITEMS.weekly.map(item => buildItemCard(item, items[item.id])).join('')}
       </div>
     `;
   }
