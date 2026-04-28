@@ -343,6 +343,18 @@
       box-shadow: 0 0 0 4px rgba(255,140,0,0.1);
     }
     .modal-input::placeholder { color: #CCC; font-size: 22px; font-weight: 600; }
+    .modal-edit-hint {
+      text-align: center;
+      font-size: 13px;
+      color: #E65100;
+      background: #FFF3E0;
+      padding: 8px 12px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    .modal-edit-hint span {
+      font-weight: 700;
+    }
     .modal-unit { font-size: 16px; color: var(--text-sub); min-width: 40px; font-weight: 600; }
     .modal-submit {
       width: 100%;
@@ -528,6 +540,9 @@
     <div class="modal-input-wrap">
       <input type="number" class="modal-input" id="modal-input" inputmode="numeric" placeholder="0">
       <span class="modal-unit" id="modal-unit">—</span>
+    </div>
+    <div class="modal-edit-hint" id="modal-edit-hint" style="display:none">
+      已有數值：<span id="modal-current-val">0</span>，請輸入新數值覆蓋
     </div>
     <button class="modal-submit" id="modal-submit" onclick="submitFromModal()">✅ 送出填報</button>
     <button class="modal-cancel" onclick="closeModal()">取消</button>
@@ -805,8 +820,16 @@
     document.getElementById('modal-title').textContent = currentItem.cn;
     document.getElementById('modal-sub').textContent = currentItem.vi;
     document.getElementById('modal-unit').textContent = currentItem.unit;
-    document.getElementById('modal-input').value =
-      currentStock[itemId] !== undefined ? currentStock[itemId] : '';
+    const existingVal = currentStock[itemId];
+    document.getElementById('modal-input').value = existingVal !== undefined ? existingVal : '';
+    const hint = document.getElementById('modal-edit-hint');
+    const currSpan = document.getElementById('modal-current-val');
+    if (existingVal !== undefined) {
+      currSpan.textContent = existingVal + ' ' + currentItem.unit;
+      hint.style.display = 'block';
+    } else {
+      hint.style.display = 'none';
+    }
     document.getElementById('modal').classList.add('show');
     setTimeout(() => document.getElementById('modal-input').focus(), 350);
   };
