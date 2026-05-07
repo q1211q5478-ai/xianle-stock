@@ -190,7 +190,15 @@
       letter-spacing: 1px;
     }
     .section-title.daily { color: var(--orange); }
+    
     .section-title.weekly { color: #2E7D32; }
+    .section-title.meat { color: #C62828; }
+    .section-title.veg { color: #2E7D32; }
+    .section-title.tempura { color: #F57C00; }
+    .section-title.snack { color: #7B1FA2; }
+    .section-title.packing { color: #1565C0; }
+    .section-title.clean { color: #00838F; }
+
     .section-count {
       font-size: 12px;
       color: var(--text-sub);
@@ -513,23 +521,8 @@
   <div class="count-badge" id="alert-count">0</div>
 </div>
 
-<!-- Daily Section -->
-<div class="section">
-  <div class="section-head">
-    <div class="section-title daily">📅 每日品項</div>
-    <div class="section-count" id="daily-count">0/0</div>
-  </div>
-  <div class="item-grid" id="daily-grid"></div>
-</div>
-
-<!-- Weekly Section -->
-<div class="section">
-  <div class="section-head">
-    <div class="section-title weekly">📦 每週品項</div>
-    <div class="section-count" id="weekly-count">0/0</div>
-  </div>
-  <div class="item-grid" id="weekly-grid"></div>
-</div>
+<!-- Categories -->
+<div class="section" id="categories-section"></div>
 
 <!-- Modal -->
 <div class="modal-overlay" id="modal">
@@ -574,60 +567,72 @@
 
   // ===== 品項資料（已同步最新庫存表） =====
   const ITEMS = {
-    daily: [
-      { id: 'D001', cn: '雞排', vi: 'Gà rán miếng', unit: '盒', low: 2 },
-      { id: 'D002', cn: '雞腿', vi: 'Đùi gà', unit: '盒', low: 1 },
-      { id: 'D003', cn: '雞翅', vi: 'Cánh gà', unit: '盒', low: 1 },
-      { id: 'D004', cn: '鹹酥雞', vi: 'Gà popcorn', unit: '包', low: 5 },
-      { id: 'D005', cn: '雞軟骨', vi: 'Sụn gà', unit: '包', low: 3 },
-      { id: 'D006', cn: '甜不辣', vi: 'Chả cá sợi', unit: '包', low: 3 },
-      { id: 'D007', cn: '薯條', vi: 'Khoai tây nhỏ', unit: '包', low: 3 },
-      { id: 'D008', cn: '脆薯', vi: 'Khoai tây to', unit: '包', low: 2 },
-      { id: 'D009', cn: '青椒', vi: 'Ớt chuông xanh', unit: '包', low: 5 },
-      { id: 'D010', cn: '玉米', vi: 'Ngô (Bắp)', unit: '包', low: 5 },
-      { id: 'D011', cn: '四季豆', vi: 'Đậu cove', unit: '包', low: 5 },
-      { id: 'D012', cn: '杏鮑菇', vi: 'Nấm trắng', unit: '包', low: 5 },
-      { id: 'D013', cn: '香菇', vi: 'Nấm nâu', unit: '包', low: 5 },
-      { id: 'D014', cn: '豬血糕', vi: 'Tiết heo nếp', unit: '包', low: 15 },
-      { id: 'D015', cn: '雞蛋豆腐', vi: 'Đậu phụ trứng', unit: '盒', low: 5 },
-      { id: 'D016', cn: '雞脖子', vi: 'Cổ gà', unit: '包', low: 3 },
-      { id: 'D017', cn: '耐炸油', vi: 'Dầu Rán', unit: '桶', low: 2 },
-      { id: 'D018', cn: '脆皮粉', vi: 'Bột Ướt', unit: '包', low: 1 },
-      { id: 'D019', cn: '白色雞排粉', vi: 'Bột Khô', unit: '包', low: 1 },
-      { id: 'D020', cn: '雞皮', vi: 'Da gà', unit: '包', low: 3 },
-      { id: 'D021', cn: '雞屁股', vi: 'Mông gà', unit: '支', low: 10 },
-      { id: 'D022', cn: '玉米筍', vi: 'Ngô bao tử', unit: '包', low: 5 },
+    肉品: [
+      { id: 'M001', cn: '雞排', vi: 'Gà rán miếng', unit: '盒', low: 2 },
+      { id: 'M002', cn: '雞腿', vi: 'Đùi gà', unit: '盒', low: 1 },
+      { id: 'M003', cn: '雞翅', vi: 'Cánh gà', unit: '盒', low: 1 },
+      { id: 'M004', cn: '鹹酥雞', vi: 'Gà popcorn', unit: '包', low: 5 },
+      { id: 'M005', cn: '雞軟骨', vi: 'Sụn gà', unit: '包', low: 3 },
+      { id: 'M006', cn: '雞皮', vi: 'Da gà', unit: '包', low: 3 },
+      { id: 'M007', cn: '雞脖子', vi: 'Cổ gà', unit: '包', low: 3 },
+      { id: 'M008', cn: '雞屁股', vi: 'Mông gà', unit: '支', low: 10 },
+      { id: 'M009', cn: '雞心', vi: 'Tim gà', unit: '串', low: 20 },
+      { id: 'M010', cn: '雞胗', vi: 'Mề gà', unit: '串', low: 20 },
     ],
-    weekly: [
-      { id: 'W001', cn: '小卷天婦羅', vi: 'Tempura mực ống', unit: '包', low: 1 },
-      { id: 'W002', cn: '包蛋天婦羅', vi: 'Tempura bọc trứng', unit: '包', low: 1 },
-      { id: 'W003', cn: '地瓜', vi: 'Khoai lang', unit: '包', low: 1 },
-      { id: 'W004', cn: '花枝丸', vi: 'Viên mực trắng', unit: '包', low: 1 },
-      { id: 'W005', cn: '虱脆丸', vi: 'Viên trắng nhỏ', unit: '包', low: 3 },
-      { id: 'W006', cn: '豆干', vi: 'Đậu phụ vàng', unit: '包', low: 2 },
-      { id: 'W007', cn: '百頁豆腐', vi: 'Đậu phụ trắng', unit: '包', low: 15 },
-      { id: 'W008', cn: '起司條', vi: 'Phô mai que', unit: '包', low: 2 },
-      { id: 'W009', cn: '魷米花', vi: 'Mực popcorn', unit: '包', low: 2 },
-      { id: 'W010', cn: '牛蒡甜不辣', vi: 'Chả cá xâm', unit: '包', low: 2 },
-      { id: 'W011', cn: '雞心', vi: 'Tim gà', unit: '串', low: 20 },
-      { id: 'W012', cn: '雞胗', vi: 'Mề gà', unit: '串', low: 20 },
-      { id: 'W013', cn: '皮蛋', vi: 'Trứng bắc thảo', unit: '顆', low: 6 },
-      { id: 'W014', cn: '糯米腸', vi: 'Dồi nếp', unit: '包', low: 5 },
-      { id: 'W015', cn: '銀絲卷', vi: 'Banh Bao', unit: '包', low: 3 },
-      { id: 'W016', cn: '山藥捲', vi: 'Bánh khoai môn', unit: '捲', low: 1 },
-      { id: 'W017', cn: '玲玲捲', vi: 'Ling Ling Roll', unit: '捲', low: 20 },
-      { id: 'W018', cn: '鹹蛋黃芋泥球', vi: 'Khoai môn trứng', unit: '包', low: 1 },
-      { id: 'W019', cn: '洋蔥圈', vi: 'Vòng hành tây', unit: '包', low: 4 },
-      { id: 'W020', cn: '可樂', vi: 'Cola', unit: '罐', low: 24 },
-      { id: 'W021', cn: '雪碧', vi: 'Sprite', unit: '罐', low: 24 },
-      { id: 'W022', cn: '竹籤', vi: 'Xiên', unit: '包', low: 2 },
-      { id: 'W023', cn: '八兩紙袋', vi: 'Túi Giấy to', unit: '包', low: 10 },
-      { id: 'W024', cn: '六兩紙袋', vi: 'Túi Giấy Vừa', unit: '包', low: 10 },
-      { id: 'W025', cn: '四兩紙袋', vi: 'Túi Giấy Nhỏ', unit: '包', low: 10 },
-      { id: 'W026', cn: '飲料袋', vi: 'Túi Ức Gà', unit: '包', low: 5 },
-      { id: 'W027', cn: '半斤提袋', vi: 'Túi Vàng', unit: '包', low: 5 },
-      { id: 'W028', cn: '四兩提袋', vi: 'Túi Cam', unit: '包', low: 8 },
-    ]
+    蔬菜: [
+      { id: 'V001', cn: '青椒', vi: 'Ớt chuông xanh', unit: '包', low: 5 },
+      { id: 'V002', cn: '玉米', vi: 'Ngô (Bắp)', unit: '包', low: 5 },
+      { id: 'V003', cn: '四季豆', vi: 'Đậu cove', unit: '包', low: 5 },
+      { id: 'V004', cn: '杏鮑菇', vi: 'Nấm trắng', unit: '包', low: 5 },
+      { id: 'V005', cn: '香菇', vi: 'Nấm nâu', unit: '包', low: 5 },
+      { id: 'V006', cn: '玉米筍', vi: 'Ngô bao tử', unit: '包', low: 5 },
+      { id: 'V007', cn: '洋蔥圈', vi: 'Vòng hành tây', unit: '包', low: 4 },
+    ],
+    天婦羅: [
+      { id: 'T001', cn: '甜不辣', vi: 'Chả cá sợi', unit: '包', low: 3 },
+      { id: 'T002', cn: '薯條', vi: 'Khoai tây nhỏ', unit: '包', low: 3 },
+      { id: 'T003', cn: '脆薯', vi: 'Khoai tây to', unit: '包', low: 2 },
+      { id: 'T004', cn: '小卷天婦羅', vi: 'Tempura mực ống', unit: '包', low: 1 },
+      { id: 'T005', cn: '包蛋天婦羅', vi: 'Tempura bọc trứng', unit: '包', low: 1 },
+      { id: 'T006', cn: '地瓜', vi: 'Khoai lang', unit: '包', low: 1 },
+      { id: 'T007', cn: '花枝丸', vi: 'Viên mực trắng', unit: '包', low: 1 },
+      { id: 'T008', cn: '虱脆丸', vi: 'Viên trắng nhỏ', unit: '包', low: 3 },
+      { id: 'T009', cn: '魷米花', vi: 'Mực popcorn', unit: '包', low: 2 },
+      { id: 'T010', cn: '牛蒡甜不辣', vi: 'Chả cá xâm', unit: '包', low: 2 },
+      { id: 'T011', cn: '山藥捲', vi: 'Bánh khoai môn', unit: '捲', low: 1 },
+      { id: 'T012', cn: '玲玲捲', vi: 'Ling Ling Roll', unit: '捲', low: 20 },
+      { id: 'T013', cn: '鹹蛋黃芋泥球', vi: 'Khoai môn trứng', unit: '包', low: 1 },
+    ],
+    點心: [
+      { id: 'S001', cn: '豬血糕', vi: 'Tiết heo nếp', unit: '包', low: 15 },
+      { id: 'S002', cn: '雞蛋豆腐', vi: 'Đậu phụ trứng', unit: '盒', low: 5 },
+      { id: 'S003', cn: '豆干', vi: 'Đậu phụ vàng', unit: '包', low: 2 },
+      { id: 'S004', cn: '百頁豆腐', vi: 'Đậu phụ trắng', unit: '包', low: 15 },
+      { id: 'S005', cn: '起司條', vi: 'Phô mai que', unit: '包', low: 2 },
+      { id: 'S006', cn: '皮蛋', vi: 'Trứng bắc thảo', unit: '顆', low: 6 },
+      { id: 'S007', cn: '糯米腸', vi: 'Dồi nếp', unit: '包', low: 5 },
+      { id: 'S008', cn: '銀絲卷', vi: 'Banh Bao', unit: '包', low: 3 },
+    ],
+    包材: [
+      { id: 'P001', cn: '竹籤', vi: 'Xiên', unit: '包', low: 2 },
+      { id: 'P002', cn: '八兩紙袋', vi: 'Túi Giấy to', unit: '包', low: 10 },
+      { id: 'P003', cn: '六兩紙袋', vi: 'Túi Giấy Vừa', unit: '包', low: 10 },
+      { id: 'P004', cn: '四兩紙袋', vi: 'Túi Giấy Nhỏ', unit: '包', low: 10 },
+      { id: 'P005', cn: '飲料袋', vi: 'Túi Ức Gà', unit: '包', low: 5 },
+      { id: 'P006', cn: '半斤提袋', vi: 'Túi Vàng', unit: '包', low: 5 },
+      { id: 'P007', cn: '四兩提袋', vi: 'Túi Cam', unit: '包', low: 8 },
+      { id: 'P008', cn: '垃圾袋', vi: 'Túi rác', unit: '捆', low: 1 },
+    ],
+    清潔用品: [
+      { id: 'C001', cn: '耐炸油', vi: 'Dầu Rán', unit: '桶', low: 2 },
+      { id: 'C002', cn: '脆皮粉', vi: 'Bột Ướt', unit: '包', low: 1 },
+      { id: 'C003', cn: '白色雞排粉', vi: 'Bột Khô', unit: '包', low: 1 },
+      { id: 'C004', cn: '胡椒粉', vi: 'Tiêu bột', unit: '包', low: 2 },
+      { id: 'C005', cn: '辣椒粉', vi: 'Ớt bột', unit: '包', low: 2 },
+      { id: 'C006', cn: '梅子粉', vi: 'Mứt bột', unit: '包', low: 2 },
+      { id: 'C007', cn: '可樂', vi: 'Cola', unit: '罐', low: 24 },
+      { id: 'C008', cn: '雪碧', vi: 'Sprite', unit: '罐', low: 24 },
+    ],
   };
 
   // ===== 狀態 =====
@@ -687,25 +692,29 @@
   }
 
   // ===== 渲染 =====
-  window.renderDaily = function() {
-    document.getElementById('daily-grid').innerHTML = ITEMS.daily.map(buildItemCard).join('');
-    updateCounts();
+  window.renderCategories = function() {
+    const container = document.getElementById('categories-section');
+    const categoryNames = { 肉品:'🥩', 蔬菜:'🥬', 天婦羅:'🍤', 點心:'🍿', 包材:'📦', 清潔用品:'🧹' };
+    const categoryColors = { 肉品:'meat', 蔬菜:'veg', 天婦羅:'tempura', 點心:'snack', 包材:'packing', 清潔用品:'clean' };
+    container.innerHTML = Object.entries(ITEMS).map(([cat, items]) => {
+      const filled = items.filter(i => currentStock[i.id] !== undefined).length;
+      return `<div class="section">
+        <div class="section-head">
+          <div class="section-title ${categoryColors[cat]}">${categoryNames[cat]} ${cat}</div>
+          <div class="section-count">${filled}/${items.length}</div>
+        </div>
+        <div class="item-grid">${items.map(buildItemCard).join('')}</div>
+      </div>`;
+    }).join('');
   };
-  window.renderWeekly = function() {
-    document.getElementById('weekly-grid').innerHTML = ITEMS.weekly.map(buildItemCard).join('');
-    updateCounts();
-  };
+  window.renderDaily = window.renderCategories;
+  window.renderWeekly = window.renderCategories;
 
-  function updateCounts() {
-    const dailyFilled = ITEMS.daily.filter(i => currentStock[i.id] !== undefined).length;
-    const weeklyFilled = ITEMS.weekly.filter(i => currentStock[i.id] !== undefined).length;
-    document.getElementById('daily-count').textContent = `${dailyFilled}/${ITEMS.daily.length}`;
-    document.getElementById('weekly-count').textContent = `${weeklyFilled}/${ITEMS.weekly.length}`;
-  }
+  function updateCounts() { renderCategories(); }
 
   // ===== KPI 更新 =====
   function updateKPI() {
-    const allItems = [...ITEMS.daily, ...ITEMS.weekly];
+    const allItems = Object.values(ITEMS).flat();
     const total = allItems.length;
     const filled = allItems.filter(i => currentStock[i.id] !== undefined).length;
     const pct = total > 0 ? Math.round(filled / total * 100) : 0;
@@ -810,7 +819,7 @@
 
   // ===== Modal =====
   window.openModal = function(itemId) {
-    const allItems = [...ITEMS.daily, ...ITEMS.weekly];
+    const allItems = Object.values(ITEMS).flat();
     currentItem = allItems.find(i => i.id === itemId);
     if (!currentItem) {
       showToast('❌ 品項不存在，請重新整理頁面', 'error');
