@@ -623,7 +623,7 @@
       { id: 'P007', cn: '四兩提袋', vi: 'Túi Cam', unit: '包', low: 8 },
       { id: 'P008', cn: '垃圾袋', vi: 'Túi rác', unit: '捆', low: 1 },
     ],
-    清潔用品: [
+    乾貨區: [
       { id: 'C001', cn: '耐炸油', vi: 'Dầu Rán', unit: '桶', low: 2 },
       { id: 'C002', cn: '脆皮粉', vi: 'Bột Ướt', unit: '包', low: 1 },
       { id: 'C003', cn: '白色雞排粉', vi: 'Bột Khô', unit: '包', low: 1 },
@@ -694,8 +694,8 @@
   // ===== 渲染 =====
   window.renderCategories = function() {
     const container = document.getElementById('categories-section');
-    const categoryNames = { 肉品:'🥩', 蔬菜:'🥬', 天婦羅:'🍤', 點心:'🍿', 包材:'📦', 清潔用品:'🧹' };
-    const categoryColors = { 肉品:'meat', 蔬菜:'veg', 天婦羅:'tempura', 點心:'snack', 包材:'packing', 清潔用品:'clean' };
+    const categoryNames = { 肉品:'🥩', 蔬菜:'🥬', 天婦羅:'🍤', 點心:'🍿', 包材:'📦', 乾貨區:'🧹' };
+    const categoryColors = { 肉品:'meat', 蔬菜:'veg', 天婦羅:'tempura', 點心:'snack', 包材:'packing', 乾貨區:'clean' };
     container.innerHTML = Object.entries(ITEMS).map(([cat, items]) => {
       const filled = items.filter(i => currentStock[i.id] !== undefined).length;
       return `<div class="section">
