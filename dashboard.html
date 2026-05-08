@@ -602,8 +602,14 @@
   // 讀取歷史資料
   async function loadHistoricalData(store) {
     try {
-      const historyRef = collection(db, 'stock_history');
-      const q = query(historyRef, orderBy('date', 'desc'), limit(7));
+      // 從 stock collection 讀取最近7天的資料（與 index.html 一致）
+      const stockRef = collection(db, 'stock');
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 6);
+      const startStr = startDate.toISOString().split('T')[0];
+      const endStr = new Date().toISOString().split('T')[0];
+
+      const q = query(stockRef, orderBy('date', 'desc'), limit(7));
       const snapshot = await getDocs(q);
 
       historicalData = {};
@@ -612,15 +618,27 @@
       snapshot.docs.forEach(doc => {
         const data = doc.data();
         const date = data.date;
+        if (!date || date < startStr || date > endStr) return;
         if (!dates.includes(date)) dates.push(date);
         if (!historicalData[store]) historicalData[store] = {};
         if (!historicalData[store][date]) historicalData[store][date] = {};
 
         const items = {};
-        if (data.items && data.items.mapValue) {
-          for (const [k, v] of Object.entries(data.items.mapValue.fields || {})) {
+        // 相容巢狀格式 items.{ D001: { integerValue: "5" } }
+        if (data.items && typeof data.items === 'object') {
+          for (const [k, v] of Object.entries(data.items)) {
             items[k] = typeof v === 'number' ? v
               : (v?.integerValue !== undefined ? parseInt(v.integerValue) : v?.doubleValue !== undefined ? parseFloat(v.doubleValue) : 0);
+          }
+        }
+        // 相容扁平格式 items.D001 = 5
+        for (const [k, v] of Object.entries(data)) {
+          if (k.startsWith('items.')) {
+            const id = k.replace('items.', '');
+            if (!items[id]) {
+              items[id] = typeof v === 'number' ? v
+                : (v?.integerValue !== undefined ? parseInt(v.integerValue) : v?.doubleValue !== undefined ? parseFloat(v.doubleValue) : 0);
+            }
           }
         }
         historicalData[store][date] = items;
