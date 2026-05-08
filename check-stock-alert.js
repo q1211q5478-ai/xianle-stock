@@ -270,32 +270,36 @@ async function checkStockAlerts() {
     byStore[item.store].push(item);
   }
 
-  // 按鈕（每品項一行）
+  // 按鈕（每品項一行：品名｜＋1｜＋3｜＋5｜✏️）
   const buttons = [];
   for (const item of reorderList) {
-    const shortName = item.name.length > 5 ? item.name.substring(0, 5) + '…' : item.name;
+    const shortName = item.name.length > 6 ? item.name.substring(0, 6) + '…' : item.name;
     buttons.push([
-      { text: `${shortName} ${item.current}${item.unit}→+${item.order}`, callback_data: `restock:${item.store}:${item.id}:${item.order}` }
+      { text: `${shortName}`, callback_data: `info:${item.store}:${item.id}` },
+      { text: `＋1`, callback_data: `restock:${item.store}:${item.id}:1` },
+      { text: `＋3`, callback_data: `restock:${item.store}:${item.id}:3` },
+      { text: `＋5`, callback_data: `restock:${item.store}:${item.id}:5` },
+      { text: `✏️`, callback_data: `manual:${item.store}:${item.id}` }
     ]);
   }
-  buttons.push([{ text: '📊 開啟後台儀表板', url: 'https://q1211q5478-ai.github.io/xianle-stock/dashboard.html' }]);
-  buttons.push([{ text: '📝 填報今日庫存', url: 'https://q1211q5478-ai.github.io/xianle-stock/' }]);
+  buttons.push([
+    { text: '📊 查看完整庫存儀表板', url: 'https://q1211q5478-ai.github.io/xianle-stock/dashboard.html' }
+  ]);
 
   let message = `<b>📦 鮮樂炸雞 進貨建議</b>\n`;
   message += `${'─'.repeat(22)}\n`;
-  message += `📅 ${checkDateDisplay}（昨日關店資料）\n`;
-  message += `📐 公式：(日均×3天) − 現貨 = 建議進貨\n\n`;
+  message += `${checkDateDisplay}（昨日關店資料）\n\n`;
 
   for (const [store, storeItems] of Object.entries(byStore)) {
     message += `<b>🏪 ${store}</b>\n`;
     for (const item of storeItems) {
-      message += `▸ ${item.name}　現有: ${item.current}${item.unit}　建議: <b>+${item.order}${item.unit}</b>\n`;
+      message += `<b>▸ ${item.name}</b>　+${item.order}${item.unit}\n`;
     }
     message += '\n';
   }
 
   message += `${'─'.repeat(22)}\n`;
-  message += `💡 點上方按鈕直接更新庫存`;
+  message += `💡 選擇品項 → 增減數量 → 直接更新庫存`;
 
   try {
     await sendTelegram(message, buttons);
